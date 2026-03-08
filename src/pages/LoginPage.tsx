@@ -82,7 +82,7 @@ export default function LoginPage() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-foreground">{f.title}</p>
-                  <p className="text-xs text-muted-foreground">{f.desc}</p>
+                  <p className="text-xs text-foreground/70">{f.desc}</p>
                 </div>
               </motion.div>
             ))}
