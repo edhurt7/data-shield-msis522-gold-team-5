@@ -49,7 +49,7 @@ export default function LoginPage() {
             </motion.div>
 
             <div>
-              <h1 className="bg-gradient-to-r from-[hsl(213,56%,44%)] to-[hsl(213,56%,28%)] bg-clip-text text-4xl font-bold tracking-tight text-transparent sm:text-5xl">
+              <h1 className="bg-gradient-to-r from-[hsl(213,56%,44%)] to-[hsl(213,56%,28%)] dark:from-[hsl(213,56%,65%)] dark:to-[hsl(213,56%,52%)] bg-clip-text text-4xl font-bold tracking-tight text-transparent sm:text-5xl">
                 Privacy Shield
               </h1>
               <p className="mx-auto mt-3 max-w-xs text-base font-medium text-foreground">
