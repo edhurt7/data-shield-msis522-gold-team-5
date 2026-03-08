@@ -17,7 +17,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, History, User, LogOut } from "lucide-react";
+import { LayoutDashboard, History, User, LogOut, Shield } from "lucide-react";
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -34,7 +34,8 @@ function DesktopSidebar() {
   return (
     <Sidebar collapsible="icon" aria-label="Main navigation">
       <div className="flex h-14 items-center gap-2 border-b px-4 overflow-hidden">
-        {!collapsed && <ShieldLogo size="sm" />}
+        <Shield className="h-6 w-6 shrink-0 text-primary fill-primary/10" aria-hidden="true" />
+        {!collapsed && <span className="font-display font-bold tracking-tight text-foreground text-base whitespace-nowrap">Privacy Shield</span>}
       </div>
       <SidebarContent>
         <SidebarGroup>
