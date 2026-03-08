@@ -1,4 +1,3 @@
-import { ShieldLogo } from "@/components/ShieldLogo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
