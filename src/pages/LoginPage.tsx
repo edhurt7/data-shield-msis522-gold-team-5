@@ -15,19 +15,20 @@ export default function LoginPage() {
   const { login } = useAuth();
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-background">
+    <div className="relative flex min-h-screen flex-col bg-gradient-to-b from-background via-primary/5 to-background">
       {/* Theme toggle */}
       <div className="absolute right-4 top-4 z-10">
         <ThemeToggle />
       </div>
 
-      {/* Hero gradient background */}
+      {/* Hero gradient background - Enhanced */}
       <div
         className="pointer-events-none absolute inset-0 overflow-hidden"
         aria-hidden="true"
       >
-        <div className="absolute -top-24 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-primary/8 blur-3xl" />
-        <div className="absolute -bottom-32 right-0 h-[400px] w-[600px] rounded-full bg-primary/5 blur-3xl" />
+        <div className="absolute -top-32 left-1/4 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-gradient-to-br from-primary/25 to-primary/5 blur-3xl" />
+        <div className="absolute -bottom-24 right-1/4 h-[500px] w-[700px] rounded-full bg-gradient-to-tl from-accent/20 to-primary/10 blur-3xl" />
+        <div className="absolute top-1/3 -right-32 h-[400px] w-[500px] rounded-full bg-gradient-to-l from-primary/15 to-transparent blur-3xl" />
       </div>
 
       <main className="relative z-[1] flex flex-1 flex-col items-center justify-center px-4 py-12">
@@ -49,7 +50,7 @@ export default function LoginPage() {
             </motion.div>
 
             <div>
-              <h1 className="font-display text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+              <h1 className="bg-gradient-to-r from-primary via-primary to-primary/70 bg-clip-text text-4xl font-bold tracking-tight text-transparent sm:text-5xl">
                 Privacy Shield
               </h1>
               <p className="mx-auto mt-3 max-w-xs text-base text-muted-foreground">
@@ -73,10 +74,10 @@ export default function LoginPage() {
                 initial={{ opacity: 0, x: -16 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.4 + i * 0.1, duration: 0.4 }}
-                className="flex items-center gap-3 rounded-lg border bg-card/80 px-4 py-3 text-left backdrop-blur-sm"
+                className="flex items-center gap-3 rounded-lg border border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 px-4 py-3 text-left backdrop-blur-md shadow-md shadow-primary/10 hover:shadow-lg hover:shadow-primary/15 transition-all"
                 role="listitem"
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/10">
                   <f.icon className="h-4.5 w-4.5 text-primary" aria-hidden="true" />
                 </div>
                 <div>
@@ -96,7 +97,7 @@ export default function LoginPage() {
           >
             <Button
               size="lg"
-              className="w-full gap-2.5 text-base shadow-lg shadow-primary/20"
+              className="w-full gap-2.5 text-base shadow-lg shadow-primary/30 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 font-semibold"
               onClick={login}
               aria-label="Sign in with Google"
             >
@@ -109,8 +110,8 @@ export default function LoginPage() {
               Continue with Google
             </Button>
 
-            <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-              <Lock className="h-3 w-3" aria-hidden="true" />
+            <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground bg-gradient-to-r from-primary/5 to-accent/5 px-3 py-2 rounded-lg border border-primary/10">
+              <Lock className="h-3 w-3 text-primary" aria-hidden="true" />
               <span>Your data is encrypted and never shared</span>
             </div>
           </motion.div>
@@ -121,16 +122,16 @@ export default function LoginPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.9, duration: 0.5 }}
-          className="mt-12 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground"
-          role="list"
-          aria-label="Trust indicators"
-        >
-          {["256-bit encryption", "No data resale", "CCPA compliant", "SOC 2 ready"].map((badge) => (
-            <span key={badge} className="flex items-center gap-1" role="listitem">
-              <CheckCircle2 className="h-3.5 w-3.5 text-success" aria-hidden="true" />
-              {badge}
-            </span>
-          ))}
+           className="mt-12 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground"
+           role="list"
+           aria-label="Trust indicators"
+         >
+           {["256-bit encryption", "No data resale", "CCPA compliant", "SOC 2 ready"].map((badge) => (
+             <span key={badge} className="flex items-center gap-1 px-3 py-2 rounded-lg bg-gradient-to-r from-primary/5 to-transparent border border-primary/10" role="listitem">
+               <CheckCircle2 className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+               {badge}
+             </span>
+           ))}
         </motion.div>
       </main>
     </div>
