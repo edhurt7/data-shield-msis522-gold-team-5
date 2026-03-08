@@ -1,4 +1,3 @@
-import { ShieldLogo } from "@/components/ShieldLogo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
@@ -50,10 +49,10 @@ export default function LoginPage() {
             </motion.div>
 
             <div>
-              <h1 className="bg-gradient-to-r from-primary via-primary to-primary/70 bg-clip-text text-4xl font-bold tracking-tight text-transparent sm:text-5xl">
+              <h1 className="bg-gradient-to-r from-[hsl(213,56%,44%)] to-[hsl(213,56%,28%)] bg-clip-text text-4xl font-bold tracking-tight text-transparent sm:text-5xl">
                 Privacy Shield
               </h1>
-              <p className="mx-auto mt-3 max-w-xs text-base text-muted-foreground">
+              <p className="mx-auto mt-3 max-w-xs text-base font-medium text-foreground">
                 Your personal data removal agent. Take back control of your online privacy.
               </p>
             </div>
@@ -82,7 +81,7 @@ export default function LoginPage() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-foreground">{f.title}</p>
-                  <p className="text-xs text-muted-foreground">{f.desc}</p>
+                  <p className="text-xs text-foreground/70">{f.desc}</p>
                 </div>
               </motion.div>
             ))}
@@ -110,7 +109,7 @@ export default function LoginPage() {
               Continue with Google
             </Button>
 
-            <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground bg-gradient-to-r from-primary/5 to-accent/5 px-3 py-2 rounded-lg border border-primary/10">
+            <div className="flex items-center justify-center gap-1.5 text-xs font-medium text-foreground bg-gradient-to-r from-primary/5 to-accent/5 px-3 py-2 rounded-lg border border-primary/10">
               <Lock className="h-3 w-3 text-primary" aria-hidden="true" />
               <span>Your data is encrypted and never shared</span>
             </div>
@@ -122,7 +121,7 @@ export default function LoginPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.9, duration: 0.5 }}
-           className="mt-12 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground"
+          className="mt-12 flex flex-wrap items-center justify-center gap-4 text-xs font-medium text-foreground"
            role="list"
            aria-label="Trust indicators"
          >
