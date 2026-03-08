@@ -29,12 +29,21 @@ export function ScanTable({ sites, onSelectSite }: ScanTableProps) {
                 site.status === "found" && "cursor-pointer hover:bg-accent/50"
               )}
               onClick={() => site.status === "found" && onSelectSite(site)}
+              role={site.status === "found" ? "button" : undefined}
+              tabIndex={site.status === "found" ? 0 : undefined}
+              aria-label={site.status === "found" ? `View details for ${site.name}` : undefined}
+              onKeyDown={(e) => {
+                if (site.status === "found" && (e.key === "Enter" || e.key === " ")) {
+                  e.preventDefault();
+                  onSelectSite(site);
+                }
+              }}
             >
               <TableCell className="font-medium">{site.name}</TableCell>
               <TableCell className="hidden text-muted-foreground sm:table-cell">
                 <span className="flex items-center gap-1">
                   {site.url}
-                  <ExternalLink className="h-3 w-3" />
+                  <ExternalLink className="h-3 w-3" aria-hidden="true" />
                 </span>
               </TableCell>
               <TableCell>

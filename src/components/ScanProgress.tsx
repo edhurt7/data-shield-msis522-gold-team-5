@@ -15,14 +15,16 @@ export function ScanProgress() {
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       className="flex items-center gap-3 rounded-lg border border-info/20 bg-info/5 p-4"
+      role="status"
+      aria-label={`Scan progress: ${pct}% complete`}
     >
-      <Shield className="h-5 w-5 text-info animate-pulse-slow" />
+      <Shield className="h-5 w-5 text-info animate-pulse-slow" aria-hidden="true" />
       <div className="flex-1 space-y-1">
         <div className="flex items-center justify-between text-sm">
           <span className="font-medium text-foreground">Scan in progress…</span>
           <span className="text-muted-foreground">{pct}%</span>
         </div>
-        <Progress value={pct} className="h-2" />
+        <Progress value={pct} className="h-2" aria-label={`${pct}% complete`} />
       </div>
     </motion.div>
   );

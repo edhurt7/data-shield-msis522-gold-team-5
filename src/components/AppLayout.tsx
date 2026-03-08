@@ -1,5 +1,6 @@
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { ShieldLogo } from "@/components/ShieldLogo";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
@@ -25,10 +26,9 @@ const navItems = [
 
 function DesktopSidebar() {
   const { logout } = useAuth();
-  const location = useLocation();
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" aria-label="Main navigation">
       <div className="flex h-14 items-center gap-2 border-b px-4">
         <ShieldLogo size="sm" />
       </div>
@@ -45,7 +45,7 @@ function DesktopSidebar() {
                       className="hover:bg-sidebar-accent/50"
                       activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                     >
-                      <item.icon className="mr-2 h-4 w-4" />
+                      <item.icon className="mr-2 h-4 w-4" aria-hidden="true" />
                       <span>{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
@@ -56,8 +56,8 @@ function DesktopSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <div className="mt-auto border-t p-3">
-        <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground" onClick={logout}>
-          <LogOut className="h-4 w-4" />
+        <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground" onClick={logout} aria-label="Sign out">
+          <LogOut className="h-4 w-4" aria-hidden="true" />
           <span>Sign Out</span>
         </Button>
       </div>
@@ -70,18 +70,20 @@ function MobileBottomNav() {
   const navigate = useNavigate();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-around border-t bg-card px-2 py-2 md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-around border-t bg-card px-2 py-2 md:hidden" aria-label="Main navigation">
       {navItems.map((item) => {
         const active = location.pathname === item.url;
         return (
           <button
             key={item.title}
             onClick={() => navigate(item.url)}
+            aria-label={item.title}
+            aria-current={active ? "page" : undefined}
             className={`flex flex-col items-center gap-0.5 rounded-lg px-3 py-1.5 text-xs transition-colors ${
               active ? "text-primary" : "text-muted-foreground"
             }`}
           >
-            <item.icon className="h-5 w-5" />
+            <item.icon className="h-5 w-5" aria-hidden="true" />
             <span>{item.title}</span>
           </button>
         );
@@ -98,11 +100,14 @@ export default function AppLayout() {
       <div className="flex min-h-screen w-full">
         {!isMobile && <DesktopSidebar />}
         <div className="flex flex-1 flex-col">
-          <header className="flex h-14 items-center border-b px-4 md:px-6">
-            {!isMobile && <SidebarTrigger className="mr-3" />}
-            {isMobile && <ShieldLogo size="sm" />}
+          <header className="flex h-14 items-center justify-between border-b px-4 md:px-6">
+            <div className="flex items-center">
+              {!isMobile && <SidebarTrigger className="mr-3" aria-label="Toggle sidebar" />}
+              {isMobile && <ShieldLogo size="sm" />}
+            </div>
+            <ThemeToggle />
           </header>
-          <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
+          <main className="flex-1 overflow-y-auto pb-20 md:pb-0" role="main">
             <Outlet />
           </main>
           {isMobile && <MobileBottomNav />}

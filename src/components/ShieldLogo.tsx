@@ -6,9 +6,9 @@ export function ShieldLogo({ className, size = "default" }: { className?: string
   const textSizes = { sm: "text-base", default: "text-xl", lg: "text-3xl" };
 
   return (
-    <div className={cn("flex items-center gap-2", className)}>
+    <div className={cn("flex items-center gap-2", className)} role="img" aria-label="Privacy Shield logo">
       <div className="relative">
-        <Shield className={cn(sizes[size], "text-primary fill-primary/10")} />
+        <Shield className={cn(sizes[size], "text-primary fill-primary/10")} aria-hidden="true" />
       </div>
       <span className={cn("font-display font-bold tracking-tight text-foreground", textSizes[size])}>
         Privacy Shield
