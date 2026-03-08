@@ -122,16 +122,16 @@ export default function LoginPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.9, duration: 0.5 }}
-          className="mt-12 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground"
-          role="list"
-          aria-label="Trust indicators"
-        >
-          {["256-bit encryption", "No data resale", "CCPA compliant", "SOC 2 ready"].map((badge) => (
-            <span key={badge} className="flex items-center gap-1" role="listitem">
-              <CheckCircle2 className="h-3.5 w-3.5 text-success" aria-hidden="true" />
-              {badge}
-            </span>
-          ))}
+           className="mt-12 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground"
+           role="list"
+           aria-label="Trust indicators"
+         >
+           {["256-bit encryption", "No data resale", "CCPA compliant", "SOC 2 ready"].map((badge) => (
+             <span key={badge} className="flex items-center gap-1 px-3 py-2 rounded-lg bg-gradient-to-r from-primary/5 to-transparent border border-primary/10" role="listitem">
+               <CheckCircle2 className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+               {badge}
+             </span>
+           ))}
         </motion.div>
       </main>
     </div>
