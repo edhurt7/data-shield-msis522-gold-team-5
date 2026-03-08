@@ -122,7 +122,7 @@ export default function LoginPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.9, duration: 0.5 }}
-           className="mt-12 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground"
+          className="mt-12 flex flex-wrap items-center justify-center gap-4 text-xs font-medium text-foreground"
            role="list"
            aria-label="Trust indicators"
          >
