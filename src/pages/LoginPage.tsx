@@ -15,19 +15,20 @@ export default function LoginPage() {
   const { login } = useAuth();
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-background">
+    <div className="relative flex min-h-screen flex-col bg-gradient-to-b from-background via-primary/5 to-background">
       {/* Theme toggle */}
       <div className="absolute right-4 top-4 z-10">
         <ThemeToggle />
       </div>
 
-      {/* Hero gradient background */}
+      {/* Hero gradient background - Enhanced */}
       <div
         className="pointer-events-none absolute inset-0 overflow-hidden"
         aria-hidden="true"
       >
-        <div className="absolute -top-24 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-primary/8 blur-3xl" />
-        <div className="absolute -bottom-32 right-0 h-[400px] w-[600px] rounded-full bg-primary/5 blur-3xl" />
+        <div className="absolute -top-32 left-1/4 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-gradient-to-br from-primary/25 to-primary/5 blur-3xl" />
+        <div className="absolute -bottom-24 right-1/4 h-[500px] w-[700px] rounded-full bg-gradient-to-tl from-accent/20 to-primary/10 blur-3xl" />
+        <div className="absolute top-1/3 -right-32 h-[400px] w-[500px] rounded-full bg-gradient-to-l from-primary/15 to-transparent blur-3xl" />
       </div>
 
       <main className="relative z-[1] flex flex-1 flex-col items-center justify-center px-4 py-12">
