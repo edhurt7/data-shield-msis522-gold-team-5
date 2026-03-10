@@ -103,7 +103,7 @@ export default function OnboardingPage() {
           <div className="flex items-start gap-2">
             <Checkbox id="consent" checked={consent} onCheckedChange={(c) => setConsent(c === true)} className="mt-0.5" />
             <Label htmlFor="consent" className="text-sm font-normal leading-snug text-muted-foreground">
-              I consent to Privacy Shield scanning data broker sites on my behalf to find and remove my personal information.
+              I consent to DetraceMe scanning data broker sites on my behalf to find and remove my personal information.
             </Label>
           </div>
         </div>

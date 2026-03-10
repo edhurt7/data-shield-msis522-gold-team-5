@@ -35,7 +35,7 @@ export const mockBrokerSites: BrokerSite[] = [
     status: "found",
     foundData: {
       fields: ["Full Name", "Home Address", "Phone Number", "Email", "Relatives", "Age"],
-      optOutMessage: "To whom it may concern,\n\nI am writing to request the immediate removal of my personal information from your database pursuant to applicable privacy laws.\n\nName: John Doe\nProxy Email: shield-a7x29k@privacyshield.io\n\nPlease confirm removal within 72 hours.\n\nRegards,\nPrivacy Shield Agent",
+      optOutMessage: "To whom it may concern,\n\nI am writing to request the immediate removal of my personal information from your database pursuant to applicable privacy laws.\n\nName: John Doe\nProxy Email: shield-a7x29k@detraceme.io\n\nPlease confirm removal within 72 hours.\n\nRegards,\nDetraceMe Agent",
     },
   },
   {
@@ -45,7 +45,7 @@ export const mockBrokerSites: BrokerSite[] = [
     status: "found",
     foundData: {
       fields: ["Full Name", "Current Address", "Previous Addresses", "Phone Number", "Associates"],
-      optOutMessage: "Dear WhitePages Team,\n\nI hereby request the deletion of all personal records associated with my identity from your platform.\n\nName: John Doe\nProxy Email: shield-a7x29k@privacyshield.io\n\nPlease confirm within 72 hours.\n\nRegards,\nPrivacy Shield Agent",
+      optOutMessage: "Dear WhitePages Team,\n\nI hereby request the deletion of all personal records associated with my identity from your platform.\n\nName: John Doe\nProxy Email: shield-a7x29k@detraceme.io\n\nPlease confirm within 72 hours.\n\nRegards,\nDetraceMe Agent",
     },
   },
   {
@@ -73,7 +73,7 @@ export const mockBrokerSites: BrokerSite[] = [
     status: "found",
     foundData: {
       fields: ["Full Name", "Address", "Phone", "Age", "Previous Cities"],
-      optOutMessage: "Dear TruePeopleSearch,\n\nPlease remove all records associated with my personal data from your website.\n\nName: John Doe\nProxy Email: shield-a7x29k@privacyshield.io\n\nThank you.",
+      optOutMessage: "Dear TruePeopleSearch,\n\nPlease remove all records associated with my personal data from your website.\n\nName: John Doe\nProxy Email: shield-a7x29k@detraceme.io\n\nThank you.",
     },
   },
   {
@@ -95,7 +95,7 @@ export const mockBrokerSites: BrokerSite[] = [
     status: "found",
     foundData: {
       fields: ["Full Name", "Address", "Phone", "Court Records", "Social Profiles"],
-      optOutMessage: "Dear Radaris,\n\nI request the removal of my personal information from your database.\n\nName: John Doe\nProxy Email: shield-a7x29k@privacyshield.io\n\nPlease comply within 72 hours.",
+      optOutMessage: "Dear Radaris,\n\nI request the removal of my personal information from your database.\n\nName: John Doe\nProxy Email: shield-a7x29k@detraceme.io\n\nPlease comply within 72 hours.",
     },
   },
   {
@@ -169,7 +169,7 @@ export function generateProxyEmail(): string {
   for (let i = 0; i < 6; i++) {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
   }
-  return `shield-${code}@privacyshield.io`;
+  return `shield-${code}@detraceme.io`;
 }
 
 export function getScanSummary(sites: BrokerSite[]) {
