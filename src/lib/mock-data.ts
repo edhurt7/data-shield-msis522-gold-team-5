@@ -45,7 +45,7 @@ export const mockBrokerSites: BrokerSite[] = [
     status: "found",
     foundData: {
       fields: ["Full Name", "Current Address", "Previous Addresses", "Phone Number", "Associates"],
-      optOutMessage: "Dear WhitePages Team,\n\nI hereby request the deletion of all personal records associated with my identity from your platform.\n\nName: John Doe\nProxy Email: shield-a7x29k@privacyshield.io\n\nPlease confirm within 72 hours.\n\nRegards,\nPrivacy Shield Agent",
+      optOutMessage: "Dear WhitePages Team,\n\nI hereby request the deletion of all personal records associated with my identity from your platform.\n\nName: John Doe\nProxy Email: shield-a7x29k@detraceme.io\n\nPlease confirm within 72 hours.\n\nRegards,\nDetraceMe Agent",
     },
   },
   {
