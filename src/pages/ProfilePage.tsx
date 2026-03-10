@@ -8,7 +8,7 @@ import { toast } from "sonner";
 export default function ProfilePage() {
   const { user } = useAuth();
 
-  const proxyEmail = user?.proxyEmail || "shield-a7x29k@privacyshield.io";
+  const proxyEmail = user?.proxyEmail || "shield-a7x29k@detraceme.io";
 
   const copyEmail = () => {
     navigator.clipboard.writeText(proxyEmail);

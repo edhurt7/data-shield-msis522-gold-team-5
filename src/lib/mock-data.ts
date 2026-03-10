@@ -169,7 +169,7 @@ export function generateProxyEmail(): string {
   for (let i = 0; i < 6; i++) {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
   }
-  return `shield-${code}@privacyshield.io`;
+  return `shield-${code}@detraceme.io`;
 }
 
 export function getScanSummary(sites: BrokerSite[]) {
