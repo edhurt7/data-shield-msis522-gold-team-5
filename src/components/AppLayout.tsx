@@ -35,7 +35,7 @@ function DesktopSidebar() {
     <Sidebar collapsible="icon" aria-label="Main navigation">
       <div className="flex h-14 items-center gap-2 border-b px-4 overflow-hidden">
         <Shield className="h-6 w-6 shrink-0 text-primary fill-primary/10" aria-hidden="true" />
-        {!collapsed && <span className="font-display font-bold tracking-tight text-foreground text-base whitespace-nowrap">Privacy Shield</span>}
+        {!collapsed && <span className="font-display font-bold tracking-tight text-foreground text-base whitespace-nowrap">DetraceMe</span>}
       </div>
       <SidebarContent>
         <SidebarGroup>
