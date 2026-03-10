@@ -35,7 +35,7 @@ export const mockBrokerSites: BrokerSite[] = [
     status: "found",
     foundData: {
       fields: ["Full Name", "Home Address", "Phone Number", "Email", "Relatives", "Age"],
-      optOutMessage: "To whom it may concern,\n\nI am writing to request the immediate removal of my personal information from your database pursuant to applicable privacy laws.\n\nName: John Doe\nProxy Email: shield-a7x29k@privacyshield.io\n\nPlease confirm removal within 72 hours.\n\nRegards,\nPrivacy Shield Agent",
+      optOutMessage: "To whom it may concern,\n\nI am writing to request the immediate removal of my personal information from your database pursuant to applicable privacy laws.\n\nName: John Doe\nProxy Email: shield-a7x29k@detraceme.io\n\nPlease confirm removal within 72 hours.\n\nRegards,\nDetraceMe Agent",
     },
   },
   {
