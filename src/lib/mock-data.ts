@@ -73,7 +73,7 @@ export const mockBrokerSites: BrokerSite[] = [
     status: "found",
     foundData: {
       fields: ["Full Name", "Address", "Phone", "Age", "Previous Cities"],
-      optOutMessage: "Dear TruePeopleSearch,\n\nPlease remove all records associated with my personal data from your website.\n\nName: John Doe\nProxy Email: shield-a7x29k@privacyshield.io\n\nThank you.",
+      optOutMessage: "Dear TruePeopleSearch,\n\nPlease remove all records associated with my personal data from your website.\n\nName: John Doe\nProxy Email: shield-a7x29k@detraceme.io\n\nThank you.",
     },
   },
   {
