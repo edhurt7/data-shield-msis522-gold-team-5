@@ -26,7 +26,7 @@ describe("agent workflow skeleton", () => {
     events: [],
   };
 
-  it("runs the happy path for a single site with document-backed retrieval", async () => {
+  it("runs the happy path for a single site with backend-backed retrieval", async () => {
     const workflow = createAgentWorkflow();
 
     const result = await workflow.run({

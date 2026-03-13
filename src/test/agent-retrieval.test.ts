@@ -1,8 +1,10 @@
+import { ZodError } from "zod";
 import { describe, expect, it } from "vitest";
 
 import {
+  createBackendProcedureRetriever,
   createDefaultProcedureRetriever,
-  createDocumentProcedureRetriever,
+  createStaticProcedureRetrievalBackendClient,
   reviewReasonsForProcedureResolution,
 } from "@/lib/agent";
 
@@ -55,10 +57,49 @@ describe("procedure retrieval integration", () => {
     events: [],
   };
 
-  it("returns missing when no procedure chunks or documents are available", async () => {
-    const retriever = createDocumentProcedureRetriever({
-      documents: [],
-      now: "2026-03-12T00:00:00.000Z",
+  it("retrieves procedure chunks from backend-shaped data", async () => {
+    const retriever = createBackendProcedureRetriever({
+      client: createStaticProcedureRetrievalBackendClient([
+        {
+          site: "FastPeopleSearch",
+          retrieved_at: "2026-03-12T12:00:00.000Z",
+          procedures: [
+            {
+              procedure_id: "fps-webform-v2",
+              site: "FastPeopleSearch",
+              updated_at: "2026-03-10T00:00:00.000Z",
+              channel_hint: "webform",
+              source_chunks: [
+                { doc_id: "fps-live-1", quote: "Use the FastPeopleSearch removal webform." },
+                { doc_id: "fps-live-2", quote: "Required fields: full name and privacy email." },
+              ],
+            },
+          ],
+        },
+      ]),
+      now: "2026-03-12T12:00:00.000Z",
+    });
+
+    const result = await retriever(input, context);
+
+    expect(result.status).toBe("found");
+    expect(result.chunks).toEqual([
+      { doc_id: "fps-live-1", quote: "Use the FastPeopleSearch removal webform." },
+      { doc_id: "fps-live-2", quote: "Required fields: full name and privacy email." },
+    ]);
+    expect(result.notes).toContain("fps-webform-v2");
+  });
+
+  it("returns missing when the backend has no procedure for the site", async () => {
+    const retriever = createBackendProcedureRetriever({
+      client: createStaticProcedureRetrievalBackendClient([
+        {
+          site: "Spokeo",
+          retrieved_at: "2026-03-12T12:00:00.000Z",
+          procedures: [],
+        },
+      ]),
+      now: "2026-03-12T12:00:00.000Z",
     });
 
     const result = await retriever(input, context);
@@ -68,7 +109,90 @@ describe("procedure retrieval integration", () => {
     expect(result.review_reasons).toEqual(["missing_procedure"]);
   });
 
-  it("prefers provided chunks over document corpus results", async () => {
+  it("marks stale backend procedures for review", async () => {
+    const retriever = createBackendProcedureRetriever({
+      client: createStaticProcedureRetrievalBackendClient([
+        {
+          site: "FastPeopleSearch",
+          retrieved_at: "2026-03-12T12:00:00.000Z",
+          procedures: [
+            {
+              procedure_id: "fps-old",
+              site: "FastPeopleSearch",
+              updated_at: "2025-01-01T00:00:00.000Z",
+              channel_hint: "webform",
+              source_chunks: [{ doc_id: "fps-old-1", quote: "Old webform procedure." }],
+            },
+          ],
+        },
+      ]),
+      maxAgeDays: 30,
+      now: "2026-03-12T00:00:00.000Z",
+    });
+
+    const result = await retriever(input, context);
+
+    expect(result.status).toBe("stale");
+    expect(result.review_reasons).toEqual(["stale_procedure"]);
+  });
+
+  it("marks contradictory backend procedures for review", async () => {
+    const retriever = createBackendProcedureRetriever({
+      client: createStaticProcedureRetrievalBackendClient([
+        {
+          site: "FastPeopleSearch",
+          retrieved_at: "2026-03-12T12:00:00.000Z",
+          procedures: [
+            {
+              procedure_id: "fps-email",
+              site: "FastPeopleSearch",
+              updated_at: "2026-03-01T00:00:00.000Z",
+              channel_hint: "email",
+              source_chunks: [{ doc_id: "fps-email-1", quote: "Email privacy@site.test." }],
+            },
+            {
+              procedure_id: "fps-webform",
+              site: "FastPeopleSearch",
+              updated_at: "2026-03-02T00:00:00.000Z",
+              channel_hint: "webform",
+              source_chunks: [{ doc_id: "fps-webform-1", quote: "Use the webform only." }],
+            },
+          ],
+        },
+      ]),
+      now: "2026-03-12T00:00:00.000Z",
+    });
+
+    const result = await retriever(input, context);
+
+    expect(result.status).toBe("contradictory");
+    expect(result.review_reasons).toEqual(["contradictory_procedure"]);
+    expect(result.chunks.length).toBe(2);
+  });
+
+  it("rejects malformed backend payloads", async () => {
+    const retriever = createBackendProcedureRetriever({
+      client: {
+        retrieveProcedures: () => ({
+          site: "FastPeopleSearch",
+          retrieved_at: "2026-03-12T12:00:00.000Z",
+          procedures: [
+            {
+              procedure_id: "fps-invalid",
+              site: "FastPeopleSearch",
+              updated_at: "2026-03-10T00:00:00.000Z",
+              channel_hint: "webform",
+            },
+          ],
+        }),
+      },
+      now: "2026-03-12T12:00:00.000Z",
+    });
+
+    await expect(retriever(input, context)).rejects.toBeInstanceOf(ZodError);
+  });
+
+  it("prefers provided chunks over backend results", async () => {
     const retriever = createDefaultProcedureRetriever();
 
     const result = await retriever(
@@ -81,65 +205,6 @@ describe("procedure retrieval integration", () => {
 
     expect(result.status).toBe("found");
     expect(result.chunks).toEqual([{ doc_id: "fps-live-1", quote: "Use the webform and enter full name and email." }]);
-  });
-
-  it("retrieves procedure chunks from the built-in document corpus", async () => {
-    const retriever = createDefaultProcedureRetriever();
-
-    const result = await retriever(input, context);
-
-    expect(result.status).toBe("found");
-    expect(result.chunks.length).toBeGreaterThan(0);
-    expect(result.notes).toContain("fastpeoplesearch-procedure-v1");
-  });
-
-  it("marks stale documents for review", async () => {
-    const retriever = createDocumentProcedureRetriever({
-      documents: [
-        {
-          id: "fps-old",
-          site: "FastPeopleSearch",
-          updated_at: "2025-01-01T00:00:00.000Z",
-          channel_hint: "webform",
-          chunks: [{ doc_id: "fps-old-1", quote: "Old webform procedure." }],
-        },
-      ],
-      maxAgeDays: 30,
-      now: "2026-03-12T00:00:00.000Z",
-    });
-
-    const result = await retriever(input, context);
-
-    expect(result.status).toBe("stale");
-    expect(result.review_reasons).toEqual(["stale_procedure"]);
-  });
-
-  it("marks contradictory documents for review", async () => {
-    const retriever = createDocumentProcedureRetriever({
-      documents: [
-        {
-          id: "fps-email",
-          site: "FastPeopleSearch",
-          updated_at: "2026-03-01T00:00:00.000Z",
-          channel_hint: "email",
-          chunks: [{ doc_id: "fps-email-1", quote: "Email privacy@site.test." }],
-        },
-        {
-          id: "fps-webform",
-          site: "FastPeopleSearch",
-          updated_at: "2026-03-02T00:00:00.000Z",
-          channel_hint: "webform",
-          chunks: [{ doc_id: "fps-webform-1", quote: "Use the webform only." }],
-        },
-      ],
-      now: "2026-03-12T00:00:00.000Z",
-    });
-
-    const result = await retriever(input, context);
-
-    expect(result.status).toBe("contradictory");
-    expect(result.review_reasons).toEqual(["contradictory_procedure"]);
-    expect(result.chunks.length).toBe(2);
   });
 
   it("maps contradictory retrieval to an explicit review reason", () => {

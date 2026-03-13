@@ -5,7 +5,7 @@ import { fastPeopleSearchFixture } from "@/lib/agent/fixtures/fastpeoplesearch";
 import { ambiguousFastPeopleSearchFixture } from "@/lib/agent/fixtures/fastpeoplesearch-negative";
 
 describe("artifact-backed one-site golden path", () => {
-  it("runs FastPeopleSearch end-to-end using saved listing text and repo-backed procedure documents", async () => {
+  it("runs FastPeopleSearch end-to-end using saved listing text and backend-shaped procedure retrieval", async () => {
     const workflow = createAgentWorkflow();
 
     const result = await workflow.run({
