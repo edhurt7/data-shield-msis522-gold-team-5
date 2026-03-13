@@ -1,12 +1,14 @@
 from functools import lru_cache
 import json
 from pathlib import Path
+import shlex
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 BASE_DIR = Path(__file__).resolve().parents[2]
+REPO_ROOT = BASE_DIR.parent
 DEFAULT_SQLITE_PATH = BASE_DIR / "data" / "app.db"
 
 
@@ -39,6 +41,9 @@ class Settings(BaseSettings):
     privacy_from_email: str | None = None
 
     storage_dir: Path = BASE_DIR / "data" / "artifacts"
+    workflow_worker_enabled: bool = True
+    workflow_worker_command: str = "./node_modules/.bin/vite-node scripts/backend-workflow-runner.ts"
+    workflow_worker_cwd: Path = REPO_ROOT
 
     @field_validator("cors_origins", mode="before")
     @classmethod
@@ -60,6 +65,15 @@ class Settings(BaseSettings):
             return [str(item).strip() for item in parsed if str(item).strip()]
 
         return [item.strip() for item in stripped.split(",") if item.strip()]
+
+    @field_validator("workflow_worker_cwd", mode="before")
+    @classmethod
+    def parse_worker_cwd(cls, value: str | Path) -> Path:
+        return Path(value)
+
+    @property
+    def workflow_worker_command_parts(self) -> list[str]:
+        return shlex.split(self.workflow_worker_command)
 
 
 @lru_cache

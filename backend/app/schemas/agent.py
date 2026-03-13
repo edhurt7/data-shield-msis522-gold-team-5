@@ -198,6 +198,54 @@ class PlanSubmissionResponse(BaseModel):
     handoffs: list[dict[str, Any]] = Field(default_factory=list)
 
 
+class MonitoringPolicyRead(BaseModel):
+    cadenceDays: int
+    reReviewCooldownDays: int
+    reReviewListingReappearanceThreshold: int
+
+
+class MonitoredTargetRead(BaseModel):
+    siteId: str
+    candidateId: str
+    candidateUrl: str
+    monitoringStatus: Literal["scheduled", "awaiting_confirmation", "rescan_due", "manual_review"]
+    latestStatus: str
+    triggerNewRemovalCycle: bool = False
+
+
+class MonitoredTargetSetRead(BaseModel):
+    targetSetId: str
+    sourceRunId: str
+    profileId: str
+    profileName: str
+    status: Literal["active", "needs_attention", "completed"]
+    monitoringPolicy: MonitoringPolicyRead
+    targetCount: int
+    activeTargetCount: int
+    needsAttentionCount: int
+    targets: list[MonitoredTargetRead] = Field(default_factory=list)
+    materializedFromRunAt: datetime
+    createdAt: datetime
+    updatedAt: datetime
+    storageBacked: bool = False
+
+
+class CreateMonitoredTargetSetFromRunRequest(BaseModel):
+    profileId: str
+
+
+class CreateMonitoredTargetSetFromRunResponse(BaseModel):
+    targetSet: MonitoredTargetSetRead
+
+
+class ListMonitoredTargetSetsResponse(BaseModel):
+    targetSets: list[MonitoredTargetSetRead] = Field(default_factory=list)
+
+
+class GetMonitoredTargetSetResponse(BaseModel):
+    targetSet: MonitoredTargetSetRead
+
+
 class ProcedureChunkRead(BaseModel):
     doc_id: str
     quote: str

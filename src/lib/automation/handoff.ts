@@ -40,6 +40,7 @@ export function createWorkflowAutomationHandoff(siteRun: WorkflowSiteRunOutput):
 
   const fields: Record<string, string | number | boolean | string[]> = {
     candidate_url: actionPlan.candidate_url,
+    listing_url: actionPlan.candidate_url,
     full_name: siteRun.validate_consent.seed_profile.full_name,
     privacy_email: siteRun.validate_consent.seed_profile.privacy_email,
     state: siteRun.validate_consent.seed_profile.location.state,

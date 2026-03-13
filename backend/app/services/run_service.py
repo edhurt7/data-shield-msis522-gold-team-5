@@ -10,8 +10,12 @@ from app.schemas.agent import (
     AgentRunStateRead,
     AppendExecutionResultRequest,
     ChatMessageRead,
+    CreateMonitoredTargetSetFromRunResponse,
+    GetMonitoredTargetSetResponse,
     ListRemovalRequestsResponse,
     ListChatMessagesResponse,
+    ListMonitoredTargetSetsResponse,
+    MonitoredTargetSetRead,
     ProcedureRetrievalRequest,
     RemovalRequestRead,
     RemovalStatusEventRead,
@@ -20,6 +24,7 @@ from app.schemas.agent import (
     UserIntent,
     WorkflowEventRead,
 )
+from app.services.langgraph_bridge import LangGraphBridgeError, LangGraphWorkflowResult, run_langgraph_workflow
 from app.services.procedure_service import retrieve_relevant_procedures
 
 
@@ -329,16 +334,94 @@ def _submission_payload(
     }
 
 
-def process_run_workflow(db: Session, run: AgentRun, *, reset_state: bool = False) -> list[WorkflowEvent]:
+def _clear_run_state(run: AgentRun) -> None:
+    run.candidates = []
+    run.match_decisions = []
+    run.procedures = []
+    run.drafts = []
+    run.handoffs = []
+    run.outcomes = []
+    run.pending_review_reasons = []
+
+
+def _persist_langgraph_result(
+    db: Session,
+    run: AgentRun,
+    result: LangGraphWorkflowResult,
+    *,
+    reset_state: bool,
+) -> list[WorkflowEvent]:
+    if reset_state:
+        _clear_run_state(run)
+
+    run.targets = result.targets
+    run.candidates = result.candidates
+    run.match_decisions = result.match_decisions
+    run.procedures = result.procedures
+    run.drafts = result.drafts
+    run.handoffs = result.handoffs
+    run.outcomes = result.outcomes
+    run.pending_review_reasons = result.pending_review_reasons
+    run.current_phase = result.current_phase
+    run.status = result.status
+
+    events: list[WorkflowEvent] = []
+    for payload in result.timeline:
+        events.append(
+            append_event(
+                db,
+                run,
+                phase=str(payload["phase"]),
+                status=str(payload["status"]),
+                message=str(payload["message"]),
+                site_id=payload.get("siteId"),
+                candidate_id=payload.get("candidateId"),
+                review_reasons=list(payload.get("reviewReasons", [])),
+            )
+        )
+
+    if result.automation_error:
+        run.pending_review_reasons = sorted(
+            set([*(run.pending_review_reasons or []), "manual_submission_required"])
+        )
+
+    for removal_payload in result.removals:
+        removal = get_or_create_removal_request(
+            db,
+            run,
+            site_id=str(removal_payload["siteId"]),
+            candidate_id=str(removal_payload["candidateId"]),
+            candidate_url=str(removal_payload["candidateUrl"]),
+            procedure_id=str(removal_payload["procedureId"]) if removal_payload.get("procedureId") else None,
+            submission_channel=str(removal_payload.get("submissionChannel", "webform")),
+        )
+        removal.status = str(removal_payload.get("status", "planned"))
+        removal.review_reasons = list(removal_payload.get("reviewReasons", []))
+        removal.latest_ticket_id = (removal_payload.get("ticketIds") or [None])[0]
+        removal.latest_confirmation_text = removal_payload.get("confirmationText")
+        removal.latest_error_text = removal_payload.get("errorText")
+        removal.request_metadata = dict(removal_payload.get("metadata", {}))
+        append_removal_status_event(
+            db,
+            removal,
+            status=removal.status,
+            message=str(removal_payload.get("message", f"Workflow updated {removal.site_id}.")),
+            ticket_ids=list(removal_payload.get("ticketIds", [])),
+            screenshot_ref=removal_payload.get("screenshotRef"),
+            error_text=removal_payload.get("errorText"),
+            confirmation_text=removal_payload.get("confirmationText"),
+        )
+
+    run.updated_at = utcnow()
+    db.commit()
+    db.refresh(run)
+    return events
+
+
+def _process_run_workflow_deterministic(db: Session, run: AgentRun, *, reset_state: bool = False) -> list[WorkflowEvent]:
     events: list[WorkflowEvent] = []
     if reset_state:
-        run.candidates = []
-        run.match_decisions = []
-        run.procedures = []
-        run.drafts = []
-        run.handoffs = []
-        run.outcomes = []
-        run.pending_review_reasons = []
+        _clear_run_state(run)
 
     for target in run.targets or []:
         site_id = str(target["siteId"]).lower()
@@ -543,6 +626,28 @@ def process_run_workflow(db: Session, run: AgentRun, *, reset_state: bool = Fals
     return events
 
 
+def process_run_workflow(db: Session, run: AgentRun, *, reset_state: bool = False) -> list[WorkflowEvent]:
+    try:
+        result = run_langgraph_workflow(db, run, mode="plan")
+    except LangGraphBridgeError as exc:
+        events = _process_run_workflow_deterministic(db, run, reset_state=reset_state)
+        events.append(
+            append_event(
+                db,
+                run,
+                phase=run.current_phase,
+                status=run.status,
+                message=f"LangGraph worker was unavailable; deterministic fallback used. {exc}",
+                review_reasons=["manual_submission_required"],
+            )
+        )
+        db.commit()
+        db.refresh(run)
+        return events
+
+    return _persist_langgraph_result(db, run, result, reset_state=reset_state)
+
+
 def _event_read(event: WorkflowEvent) -> WorkflowEventRead:
     return WorkflowEventRead(
         eventId=event.id,
@@ -721,7 +826,10 @@ def create_run(db: Session, payload: StartAgentRunRequest) -> tuple[AgentRun, li
         approx_age=payload.seed_profile.approx_age,
         privacy_email=str(payload.seed_profile.privacy_email),
         consent_confirmed=payload.seed_profile.consent,
-        optional_attributes=payload.seed_profile.optional.model_dump(),
+        optional_attributes={
+            **payload.seed_profile.optional.model_dump(),
+            "name_variants": list(payload.seed_profile.name_variants),
+        },
     )
     db.add(profile)
     db.flush()
@@ -822,6 +930,29 @@ def handle_chat_command(db: Session, run: AgentRun, message: str) -> tuple[ChatM
     return assistant, [event]
 
 
+def execute_approved_run(db: Session, run: AgentRun) -> list[WorkflowEvent]:
+    try:
+        result = run_langgraph_workflow(db, run, mode="execute")
+    except LangGraphBridgeError as exc:
+        run.current_phase = "execution"
+        run.status = "blocked"
+        event = append_event(
+            db,
+            run,
+            phase="execution",
+            status="blocked",
+            message=f"Automation execution could not start. {exc}",
+            review_reasons=["manual_submission_required"],
+        )
+        run.pending_review_reasons = sorted(set([*(run.pending_review_reasons or []), "manual_submission_required"]))
+        run.updated_at = utcnow()
+        db.commit()
+        db.refresh(run)
+        return [event]
+
+    return _persist_langgraph_result(db, run, result, reset_state=False)
+
+
 def submit_approval(
     db: Session,
     run: AgentRun,
@@ -841,6 +972,16 @@ def submit_approval(
                     status="approved",
                     message="User approved this removal request for execution.",
                 )
+        db.commit()
+        db.refresh(run)
+        events = execute_approved_run(db, run)
+        if note:
+            message = f"{message} Note: {note}"
+        approval_event = append_event(db, run, phase="execution", status=run.status, message=message)
+        run.updated_at = utcnow()
+        db.commit()
+        db.refresh(run)
+        return [approval_event, *events]
     elif action == "reject":
         run.current_phase = "approval"
         run.status = "blocked"
@@ -867,6 +1008,92 @@ def submit_approval(
     db.commit()
     db.refresh(run)
     return [event]
+
+
+def build_monitored_target_set(run: AgentRun, profile_id: str | None = None) -> MonitoredTargetSetRead:
+    profile_name = run.profile.full_name
+    latest_outcome_by_candidate = {
+        str(outcome.get("candidateId")): dict(outcome)
+        for outcome in (run.outcomes or [])
+        if outcome.get("candidateId")
+    }
+    targets = []
+    needs_attention_count = 0
+    active_count = 0
+    for candidate in run.candidates or []:
+        candidate_id = str(candidate.get("candidateId"))
+        site_id = str(candidate.get("siteId"))
+        listing_url = str(candidate.get("listingUrl"))
+        outcome = latest_outcome_by_candidate.get(candidate_id, {})
+        latest_status = str(outcome.get("status") or run.status)
+        if latest_status in {"failed", "needs_follow_up"} or "manual_submission_required" in (run.pending_review_reasons or []):
+            monitoring_status = "manual_review"
+            needs_attention_count += 1
+        elif latest_status in {"submitted", "pending"}:
+            monitoring_status = "awaiting_confirmation"
+            active_count += 1
+        else:
+            monitoring_status = "scheduled"
+            active_count += 1
+        targets.append(
+            {
+                "siteId": site_id,
+                "candidateId": candidate_id,
+                "candidateUrl": listing_url,
+                "monitoringStatus": monitoring_status,
+                "latestStatus": latest_status,
+                "triggerNewRemovalCycle": False,
+            }
+        )
+
+    status = "needs_attention" if needs_attention_count > 0 else "active" if targets else "completed"
+    return MonitoredTargetSetRead(
+        targetSetId=f"mts_{run.id}",
+        sourceRunId=run.id,
+        profileId=profile_id or run.profile.id,
+        profileName=profile_name,
+        status=status,
+        monitoringPolicy={
+            "cadenceDays": 30,
+            "reReviewCooldownDays": 30,
+            "reReviewListingReappearanceThreshold": 1,
+        },
+        targetCount=len(targets),
+        activeTargetCount=active_count,
+        needsAttentionCount=needs_attention_count,
+        targets=targets,
+        materializedFromRunAt=run.updated_at,
+        createdAt=run.created_at,
+        updatedAt=run.updated_at,
+        storageBacked=False,
+    )
+
+
+def list_monitored_target_sets(db: Session) -> ListMonitoredTargetSetsResponse:
+    runs = db.query(AgentRun).order_by(AgentRun.updated_at.desc()).all()
+    return ListMonitoredTargetSetsResponse(
+        targetSets=[build_monitored_target_set(run) for run in runs if (run.candidates or [])]
+    )
+
+
+def get_monitored_target_set(db: Session, target_set_id: str) -> GetMonitoredTargetSetResponse | None:
+    if not target_set_id.startswith("mts_"):
+        return None
+    run_id = target_set_id.removeprefix("mts_")
+    run = get_run(db, run_id)
+    if not run:
+        return None
+    return GetMonitoredTargetSetResponse(targetSet=build_monitored_target_set(run))
+
+
+def create_monitored_target_set_from_run(
+    db: Session,
+    run: AgentRun,
+    profile_id: str,
+) -> CreateMonitoredTargetSetFromRunResponse:
+    return CreateMonitoredTargetSetFromRunResponse(
+        targetSet=build_monitored_target_set(run, profile_id=profile_id)
+    )
 
 
 def trigger_rescan(db: Session, run: AgentRun, reason: str | None) -> list[WorkflowEvent]:

@@ -251,3 +251,45 @@ def test_rescan_rebuilds_demo_workflow_state() -> None:
         assert body["run"]["status"] == "awaiting_user"
         assert len(body["run"]["candidates"]) == 2
         assert any(event["phase"] == "approval" for event in body["events"])
+
+
+def test_monitoring_target_set_endpoints() -> None:
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    with TestClient(app) as client:
+        start_response = client.post(
+            "/api/agent/runs/start",
+            json={
+                "seed_profile": {
+                    "full_name": "Morgan Example",
+                    "name_variants": [],
+                    "location": {"city": "Seattle", "state": "Washington"},
+                    "approx_age": "31",
+                    "privacy_email": "morgan-shield@example.com",
+                    "optional": {"phone_last4": "0114", "prior_cities": ["Tacoma"]},
+                    "consent": True,
+                },
+                "request_text": "Track my listings.",
+                "requested_sites": ["spokeo"],
+            },
+        )
+        run_id = start_response.json()["run"]["runId"]
+
+        create_response = client.post(
+            f"/api/monitoring/runs/{run_id}/target-set",
+            json={"profileId": "profile_demo"},
+        )
+        assert create_response.status_code == 200
+        target_set = create_response.json()["targetSet"]
+        assert target_set["sourceRunId"] == run_id
+        assert target_set["targetCount"] >= 1
+
+        list_response = client.get("/api/monitoring/target-sets")
+        assert list_response.status_code == 200
+        assert any(item["sourceRunId"] == run_id for item in list_response.json()["targetSets"])
+
+        get_response = client.get(f"/api/monitoring/target-sets/{target_set['targetSetId']}")
+        assert get_response.status_code == 200
+        assert get_response.json()["targetSet"]["sourceRunId"] == run_id
