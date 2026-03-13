@@ -124,6 +124,30 @@ describe("agent workflow skeleton", () => {
     expect(result.context.review_reasons).toContain("low_confidence_match");
   });
 
+  it("fails closed on same-name matches with contradictory age evidence", async () => {
+    const workflow = createAgentWorkflow();
+
+    const result = await workflow.run({
+      context: {
+        ...baseContext,
+        run_id: "run_workflow_003b",
+      },
+      seed_profile: seedProfile,
+      request_text: "Find me and remove the listing.",
+      site_input: {
+        site: "FastPeopleSearch",
+        page_text: "Jane Doe, age 52, Seattle, Washington. Phone 206-555-0999.",
+        page_url: "https://example.com/listing/jane-doe-age-52",
+        retrieved_chunks: [{ doc_id: "fps-1", quote: "Open the webform and enter full name and email." }],
+      },
+    });
+
+    expect(result.discovery_parse.candidates[0]?.match_confidence).toBeLessThan(0.75);
+    expect(result.draft_optout).toBeNull();
+    expect(result.plan_submission).toBeNull();
+    expect(result.context.review_reasons).toContain("low_confidence_match");
+  });
+
   it("marks stale retrieval results for review and blocks drafting", async () => {
     const workflow = createAgentWorkflow({
       procedureRetriever: () => ({
@@ -191,5 +215,128 @@ describe("agent workflow skeleton", () => {
     expect(result.context.review_reasons).toEqual(
       expect.arrayContaining(["contradictory_procedure", "procedure_unknown"]),
     );
+  });
+
+  it("treats incomplete procedure docs as procedure_unknown and blocks drafting", async () => {
+    const workflow = createAgentWorkflow();
+
+    const result = await workflow.run({
+      context: {
+        ...baseContext,
+        run_id: "run_workflow_006",
+      },
+      seed_profile: seedProfile,
+      request_text: "Find me and remove the listing.",
+      site_input: {
+        site: "FastPeopleSearch",
+        page_text: "Jane Doe, age 35, Seattle, Washington. Phone 206-555-0114.",
+        page_url: "https://example.com/listing/jane-doe",
+        retrieved_chunks: [{ doc_id: "fps-1", quote: "Use the FastPeopleSearch removal webform." }],
+      },
+    });
+
+    expect(result.retrieve_procedure?.procedure_type).toBe("procedure_unknown");
+    expect(result.draft_optout).toBeNull();
+    expect(result.plan_submission).toBeNull();
+    expect(result.context.review_reasons).toContain("procedure_unknown");
+  });
+
+  it("does not add unnecessary location PII to email drafts", async () => {
+    const workflow = createAgentWorkflow();
+
+    const result = await workflow.run({
+      context: {
+        ...baseContext,
+        run_id: "run_workflow_007",
+      },
+      seed_profile: seedProfile,
+      request_text: "Find me and remove the listing.",
+      site_input: {
+        site: "Radaris",
+        page_text: "Jane Doe, age 35, Seattle, Washington.",
+        page_url: "https://example.com/listing/jane-doe",
+        retrieved_chunks: [
+          { doc_id: "rad-1", quote: "Email privacy@radaris.example with a removal request." },
+          { doc_id: "rad-2", quote: "Required fields: full name and privacy email." },
+        ],
+      },
+    });
+
+    expect(result.draft_optout?.procedure_type).toBe("email");
+    expect(result.draft_optout?.email?.body).toContain(seedProfile.privacy_email);
+    expect(result.draft_optout?.email?.body).not.toContain(seedProfile.location.city);
+    expect(result.draft_optout?.email?.body).not.toContain(seedProfile.location.state);
+  });
+
+  it("fails closed when submitted execution evidence is unclear", async () => {
+    const workflow = createAgentWorkflow();
+
+    const result = await workflow.run({
+      context: {
+        ...baseContext,
+        run_id: "run_workflow_008",
+      },
+      seed_profile: seedProfile,
+      request_text: "Find me and remove the listing.",
+      site_input: {
+        site: "FastPeopleSearch",
+        page_text: "Jane Doe, age 35, Seattle, Washington. Phone 206-555-0114.",
+        page_url: "https://example.com/listing/jane-doe",
+        retrieved_chunks: [],
+        execution_result: {
+          site: "FastPeopleSearch",
+          candidate_url: "https://example.com/listing/jane-doe",
+          status: "submitted",
+          confirmation: {
+            ticket: null,
+            page_text: null,
+            screenshot_ref: null,
+          },
+          error: null,
+        },
+      },
+    });
+
+    expect(result.interpret_result).toEqual({
+      next_status: "pending",
+      next_action: "await_confirmation",
+      review_reasons: [],
+    });
+  });
+
+  it("routes CAPTCHA failures to manual review instead of retrying", async () => {
+    const workflow = createAgentWorkflow();
+
+    const result = await workflow.run({
+      context: {
+        ...baseContext,
+        run_id: "run_workflow_009",
+      },
+      seed_profile: seedProfile,
+      request_text: "Find me and remove the listing.",
+      site_input: {
+        site: "FastPeopleSearch",
+        page_text: "Jane Doe, age 35, Seattle, Washington. Phone 206-555-0114.",
+        page_url: "https://example.com/listing/jane-doe",
+        retrieved_chunks: [],
+        execution_result: {
+          site: "FastPeopleSearch",
+          candidate_url: "https://example.com/listing/jane-doe",
+          status: "failed",
+          confirmation: {
+            ticket: null,
+            page_text: "CAPTCHA required before submission can continue.",
+            screenshot_ref: null,
+          },
+          error: "CAPTCHA challenge encountered",
+        },
+      },
+    });
+
+    expect(result.interpret_result).toEqual({
+      next_status: "manual_required",
+      next_action: "request_user_review",
+      review_reasons: ["captcha"],
+    });
   });
 });

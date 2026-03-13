@@ -242,18 +242,26 @@ function buildQuery(seedProfile: SeedProfile) {
   return [seedProfile.full_name, seedProfile.location.city, seedProfile.location.state].join(" ");
 }
 
-function calculateConfidence(seedProfile: SeedProfile, pageText: string) {
+function calculateConfidence(
+  seedProfile: SeedProfile,
+  pageText: string,
+  matchedVariant: string | null,
+  extractedAge: string | null,
+) {
   const lowerText = toLower(pageText);
   let score = 0;
 
-  if (lowerText.includes(toLower(seedProfile.full_name))) score += 0.55;
+  if (matchedVariant) {
+    score += matchedVariant === seedProfile.full_name ? 0.55 : 0.35;
+  }
   if (lowerText.includes(toLower(seedProfile.location.city))) score += 0.15;
   if (lowerText.includes(toLower(seedProfile.location.state))) score += 0.1;
   if (seedProfile.approx_age && lowerText.includes(seedProfile.approx_age)) score += 0.1;
   if (seedProfile.optional.phone_last4 && lowerText.includes(seedProfile.optional.phone_last4)) score += 0.1;
   if (seedProfile.optional.prior_cities.some((city) => lowerText.includes(toLower(city)))) score += 0.05;
+  if (seedProfile.approx_age && extractedAge && extractedAge !== seedProfile.approx_age) score -= 0.35;
 
-  return Math.min(Number(score.toFixed(2)), 0.99);
+  return Math.max(0, Math.min(Number(score.toFixed(2)), 0.99));
 }
 
 function inferProcedureType(chunks: { doc_id: string; quote: string }[]) {
@@ -295,6 +303,58 @@ function makeFieldValue(seedProfile: SeedProfile, field: string) {
   }
 }
 
+function inferDestinationEmail(chunks: { doc_id: string; quote: string }[]) {
+  return chunks
+    .map((chunk) => chunk.quote.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0])
+    .find(Boolean) ?? "privacy@example.com";
+}
+
+function buildDraftFacts(seedProfile: SeedProfile, requiredFields: string[]) {
+  return requiredFields
+    .map((field) => ({ field, value: makeFieldValue(seedProfile, field) }))
+    .filter((entry) => entry.value)
+    .map(({ field, value }) => {
+      switch (field) {
+        case "full_name":
+          return `Full name: ${value}`;
+        case "privacy_email":
+          return `Privacy email: ${value}`;
+        case "approx_age":
+          return `Approximate age: ${value}`;
+        case "address":
+          return `Location: ${value}`;
+        default:
+          return "";
+      }
+    })
+    .filter(Boolean);
+}
+
+function hasActionableProcedure(procedureType: "email" | "webform" | "procedure_unknown", requiredFields: string[]) {
+  return procedureType !== "procedure_unknown" && requiredFields.length > 0;
+}
+
+function hasClearExecutionEvidence(executionResult: ExecutionResult) {
+  const confirmationSignals = [
+    executionResult.confirmation.ticket,
+    executionResult.confirmation.screenshot_ref,
+    executionResult.confirmation.page_text,
+  ].filter(Boolean);
+  const combinedText = toLower(
+    [executionResult.confirmation.page_text, executionResult.error].filter(Boolean).join(" "),
+  );
+
+  return confirmationSignals.length > 0
+    && /(received|submitted|confirmed|request has been|success|complete)/i.test(combinedText);
+}
+
+function hasCaptchaOrManualSignal(executionResult: ExecutionResult) {
+  const combinedText = toLower(
+    [executionResult.confirmation.page_text, executionResult.error].filter(Boolean).join(" "),
+  );
+  return /captcha|manual review|required|human verification/.test(combinedText);
+}
+
 function createDefaultNodes(): AgentWorkflowNodes {
   return {
     validateConsent(input) {
@@ -320,7 +380,7 @@ function createDefaultNodes(): AgentWorkflowNodes {
               relatives: extractRelatives(input.page_text),
               phones: extractPhones(input.page_text),
             },
-            match_confidence: calculateConfidence(input.seed_profile, input.page_text),
+            match_confidence: calculateConfidence(input.seed_profile, input.page_text, matchedVariant ?? null, age),
             evidence_snippets: [clipEvidence(input.page_text, matchedVariant ?? input.seed_profile.full_name)],
           }
         : null;
@@ -336,20 +396,21 @@ function createDefaultNodes(): AgentWorkflowNodes {
 
     retrieveProcedure(input) {
       const procedureType = inferProcedureType(input.retrieved_chunks);
-      if (procedureType === "procedure_unknown") {
+      const requiredFields = inferRequiredFields(input.retrieved_chunks);
+      if (!hasActionableProcedure(procedureType, requiredFields)) {
         return {
           site: input.site,
           procedure_type: "procedure_unknown",
           required_fields: [],
-          steps: [],
-          source_chunks: [],
+          steps: inferSteps(input.retrieved_chunks),
+          source_chunks: input.retrieved_chunks,
         };
       }
 
       return {
         site: input.site,
         procedure_type: procedureType,
-        required_fields: inferRequiredFields(input.retrieved_chunks),
+        required_fields: requiredFields,
         steps: inferSteps(input.retrieved_chunks),
         source_chunks: input.retrieved_chunks,
       };
@@ -359,9 +420,8 @@ function createDefaultNodes(): AgentWorkflowNodes {
       const { seed_profile, candidate_url, procedure, site } = input;
 
       if (procedure.procedure_type === "email") {
-        const destination = procedure.source_chunks
-          .map((chunk) => chunk.quote.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0])
-          .find(Boolean) ?? "privacy@example.com";
+        const destination = inferDestinationEmail(procedure.source_chunks);
+        const facts = buildDraftFacts(seed_profile, procedure.required_fields);
 
         return {
           site,
@@ -372,8 +432,7 @@ function createDefaultNodes(): AgentWorkflowNodes {
             subject: `${site} removal request for ${seed_profile.full_name}`,
             body: [
               `Please remove the listing associated with ${seed_profile.full_name}.`,
-              `Privacy email: ${seed_profile.privacy_email}`,
-              `Location: ${seed_profile.location.city}, ${seed_profile.location.state}`,
+              ...facts,
             ].join("\n"),
           },
         };
@@ -413,6 +472,15 @@ function createDefaultNodes(): AgentWorkflowNodes {
 
     interpretResult(input, context) {
       const reviewReasons = [...context.review_reasons, ...input.prior_review_reasons];
+      const captchaOrManual = hasCaptchaOrManualSignal(input.execution_result);
+
+      if (captchaOrManual) {
+        return {
+          next_status: "manual_required",
+          next_action: "request_user_review",
+          review_reasons: unique([...reviewReasons, "captcha"]),
+        };
+      }
 
       switch (input.execution_result.status) {
         case "manual_required":
@@ -430,10 +498,18 @@ function createDefaultNodes(): AgentWorkflowNodes {
         case "failed":
           return {
             next_status: "failed",
-            next_action: reviewReasons.includes("captcha") ? "request_user_review" : "retry",
+            next_action: "retry",
             review_reasons: unique(reviewReasons),
           };
         default:
+          if (!hasClearExecutionEvidence(input.execution_result)) {
+            return {
+              next_status: "pending",
+              next_action: "await_confirmation",
+              review_reasons: unique(reviewReasons),
+            };
+          }
+
           return {
             next_status: "submitted",
             next_action: "none",
