@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { useAuth } from "@/lib/auth-context";
-import { US_STATES } from "@/lib/mock-data";
+import { US_STATES, generateProxyEmail } from "@/lib/mock-data";
+import { useStartAgentRun } from "@/hooks/use-agent-dashboard";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
@@ -10,18 +11,23 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShieldLogo } from "@/components/ShieldLogo";
 import { cn } from "@/lib/utils";
 import { Shield, ArrowRight, CalendarIcon, Info } from "lucide-react";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 export default function OnboardingPage() {
-  const { completeOnboarding } = useAuth();
+  const { completeOnboarding, attachRun } = useAuth();
   const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
+  const startRunMutation = useStartAgentRun();
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [city, setCity] = useState("");
+  const [identifierType, setIdentifierType] = useState<"state" | "dob">("state");
   const [state, setState] = useState("");
   const [dob, setDob] = useState("");
   const [dobPickerOpen, setDobPickerOpen] = useState(false);
@@ -30,21 +36,53 @@ export default function OnboardingPage() {
   const isValid =
     firstName.trim() &&
     lastName.trim() &&
+    city.trim() &&
     consent &&
     state;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!isValid) return;
-    const identifierType = dob ? "dob" : "state";
 
-    completeOnboarding({
-      firstName,
-      lastName,
-      identifierType,
-      state,
-      dob: dob || undefined,
-    });
-    navigate("/dashboard");
+    const proxyEmail = generateProxyEmail();
+
+    try {
+      const response = await startRunMutation.mutateAsync({
+        seed_profile: {
+          full_name: `${firstName.trim()} ${lastName.trim()}`,
+          name_variants: [`${firstName.trim().charAt(0)}. ${lastName.trim()}`],
+          location: {
+            city: city.trim(),
+            state: identifierType === "state" ? state : "Washington",
+          },
+          approx_age: null,
+          privacy_email: proxyEmail,
+          optional: {
+            phone_last4: null,
+            prior_cities: [],
+          },
+          consent: true,
+        },
+        request_text: `Search for ${firstName.trim()} ${lastName.trim()} and start my first privacy scan.`,
+        requested_sites: ["fastpeoplesearch", "spokeo", "radaris"],
+      });
+
+      completeOnboarding({
+        firstName,
+        lastName,
+        city,
+        identifierType,
+        state,
+        dob: dob || undefined,
+      }, {
+        proxyEmail: response.run.profile.proxyEmail ?? proxyEmail,
+      });
+      attachRun(response.run.runId, response.run.profile.proxyEmail ?? proxyEmail);
+      toast.success("Your first scan has been created.");
+      navigate("/dashboard");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to create your first scan.";
+      toast.error(message);
+    }
   };
 
   const selectedDob = dob ? new Date(`${dob}T00:00:00`) : undefined;
@@ -79,9 +117,17 @@ export default function OnboardingPage() {
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="state">Current State</Label>
+          <div className="space-y-2">
+            <Label htmlFor="city">Current City</Label>
+            <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Seattle" />
+          </div>
+
+          <Tabs value={identifierType} onValueChange={(v) => setIdentifierType(v as "state" | "dob")}>
+            <TabsList className="w-full">
+              <TabsTrigger value="state" className="flex-1">Current State</TabsTrigger>
+              <TabsTrigger value="dob" className="flex-1">Date of Birth</TabsTrigger>
+            </TabsList>
+            <TabsContent value="state" className="mt-3">
               <Select value={state} onValueChange={setState}>
                 <SelectTrigger id="state">
                   <SelectValue placeholder="Select your state" />
@@ -92,10 +138,8 @@ export default function OnboardingPage() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="dob">Date of Birth (Optional)</Label>
+            </TabsContent>
+            <TabsContent value="dob" className="mt-3">
               <Popover open={dobPickerOpen} onOpenChange={setDobPickerOpen}>
                 <PopoverTrigger asChild>
                   <Button
@@ -128,8 +172,8 @@ export default function OnboardingPage() {
                   />
                 </PopoverContent>
               </Popover>
-            </div>
-          </div>
+            </TabsContent>
+          </Tabs>
 
           <div className="flex items-start gap-2 rounded-md bg-muted/50 p-3">
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
@@ -146,9 +190,9 @@ export default function OnboardingPage() {
           </div>
         </div>
 
-        <Button className="w-full gap-2 text-base" size="lg" disabled={!isValid} onClick={handleSubmit}>
+        <Button className="w-full gap-2 text-base" size="lg" disabled={!isValid || startRunMutation.isPending} onClick={() => void handleSubmit()}>
           <Shield className="h-4 w-4" />
-          Start My First Scan
+          {startRunMutation.isPending ? "Starting Scan..." : "Start My First Scan"}
           <ArrowRight className="h-4 w-4" />
         </Button>
       </motion.div>

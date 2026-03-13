@@ -1,17 +1,30 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { mockAgentService } from "@/lib/agent/mock-service";
-import type { DemoHarnessCaptchaSessionSnapshot, DemoHarnessRun } from "@/lib/automation/demo-harness";
-import { prependSessionHistory } from "@/lib/session-history";
-import type { BrokerSite, ChatMessage, HistoryEntry } from "@/lib/mock-data";
+import { agentApiClient } from "@/lib/agent/runtime";
+import { useAuth } from "@/lib/auth-context";
+import {
+  buildBrokerSites,
+  buildChatMessagesFromApi,
+  buildHistoryEntries,
+  type BrokerSite,
+  type ChatMessage,
+  type HistoryEntry,
+} from "@/lib/mock-data";
+
+export interface DashboardSnapshot {
+  runId: string;
+  brokerSites: BrokerSite[];
+  history: HistoryEntry[];
+  chatMessages: ChatMessage[];
+}
 
 export const agentQueryKeys = {
   dashboard: ["agent", "dashboard"] as const,
+  runs: ["agent", "runs"] as const,
+  run: (runId: string | null) => ["agent", "run", runId] as const,
+  messages: (runId: string | null) => ["agent", "messages", runId] as const,
   liveDemo: ["agent", "live-demo"] as const,
 } as const;
-
-const localDemoBaseUrl = "http://127.0.0.1:8787";
-const demoScanDelayMs = 5000;
 
 export interface LiveDemoSummary {
   browserMode: "fixture_confirmation" | "live_browser";
@@ -21,55 +34,94 @@ export interface LiveDemoSummary {
   completedSites: string[];
 }
 
-export interface LiveDemoDashboardSnapshot {
-  runId: string;
-  brokerSites: BrokerSite[];
-  history: HistoryEntry[];
-  chatMessages: ChatMessage[];
-}
+export interface LiveDemoDashboardSnapshot extends DashboardSnapshot {}
 
 export interface LiveDemoResponse {
   startedAt: string;
   completedAt: string;
   summary: LiveDemoSummary;
-  runs: DemoHarnessRun[];
+  runs: unknown[];
   dashboard: LiveDemoDashboardSnapshot;
-  captchaSessions?: DemoHarnessCaptchaSessionSnapshot[];
+  captchaSessions?: unknown[];
 }
 
-async function parseResponse<T>(response: Response): Promise<T> {
-  const payload = await response.json() as T & { error?: unknown; message?: string };
-  if (!response.ok) {
-    throw new Error(
-      typeof payload.message === "string"
-        ? payload.message
-        : typeof payload.error === "object"
-          ? JSON.stringify(payload.error, null, 2)
-          : `Local demo request failed with status ${response.status}.`,
-    );
-  }
+async function buildDashboardSnapshot(runId: string): Promise<DashboardSnapshot> {
+  const [runResponse, messagesResponse] = await Promise.all([
+    agentApiClient.getRun(runId),
+    agentApiClient.listChatMessages(runId),
+  ]);
 
-  return payload;
-}
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  const run = runResponse.run;
+  return {
+    runId: run.runId,
+    brokerSites: buildBrokerSites(run),
+    history: buildHistoryEntries(run),
+    chatMessages: buildChatMessagesFromApi(messagesResponse.messages),
+  };
 }
 
 export function useAgentDashboard() {
+  const { user } = useAuth();
+  const runId = user?.runId ?? null;
+
   return useQuery({
-    queryKey: agentQueryKeys.dashboard,
-    queryFn: () => mockAgentService.getDashboardSnapshot(),
+    queryKey: runId ? agentQueryKeys.run(runId) : agentQueryKeys.dashboard,
+    queryFn: () => buildDashboardSnapshot(runId ?? ""),
+    enabled: Boolean(runId),
+  });
+}
+
+export function useStartAgentRun() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: agentApiClient.startRun,
+    onSuccess: async (response) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: agentQueryKeys.runs }),
+        queryClient.invalidateQueries({ queryKey: agentQueryKeys.run(response.run.runId) }),
+      ]);
+    },
   });
 }
 
 export function useAgentChat() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
+  const runId = user?.runId ?? null;
 
   return useMutation({
-    mutationFn: (message: string) => mockAgentService.sendChatCommand(message),
+    mutationFn: async (message: string) => {
+      if (!runId) {
+        throw new Error("No active run.");
+      }
+      return agentApiClient.sendChatCommand(runId, { message });
+    },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: agentQueryKeys.dashboard });
+      if (!runId) return;
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: agentQueryKeys.run(runId) }),
+        queryClient.invalidateQueries({ queryKey: agentQueryKeys.messages(runId) }),
+      ]);
+    },
+  });
+}
+
+export function useTriggerRescan() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const runId = user?.runId ?? null;
+
+  return useMutation({
+    mutationFn: async (reason?: string) => {
+      if (!runId) {
+        throw new Error("No active run.");
+      }
+      return agentApiClient.triggerRescan(runId, { siteIds: [], reason });
+    },
+    onSuccess: async () => {
+      if (!runId) return;
+      await queryClient.invalidateQueries({ queryKey: agentQueryKeys.run(runId) });
     },
   });
 }
@@ -78,63 +130,25 @@ export function useLiveDemoStatus() {
   return useQuery({
     queryKey: agentQueryKeys.liveDemo,
     queryFn: async () => {
-      const response = await fetch(`${localDemoBaseUrl}/demo/runs/latest`);
-      return parseResponse<LiveDemoResponse>(response);
+      throw new Error("The local demo harness is not available on this backend branch.");
     },
     retry: false,
+    enabled: false,
   });
 }
 
 export function useRunLiveDemo() {
-  const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: async (browserMode: LiveDemoSummary["browserMode"]) => {
-      const response = await fetch(`${localDemoBaseUrl}/demo/runs`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ browserMode }),
-      });
-
-      const payload = await parseResponse<LiveDemoResponse>(response);
-
-      if (browserMode === "fixture_confirmation") {
-        await delay(demoScanDelayMs);
-      }
-
-      return payload;
-    },
-    onSuccess: async (response) => {
-      response.dashboard.history.forEach((entry) => {
-        prependSessionHistory(entry);
-      });
-
-      await queryClient.invalidateQueries({ queryKey: agentQueryKeys.dashboard });
-      await queryClient.invalidateQueries({ queryKey: agentQueryKeys.liveDemo });
+    mutationFn: async (_browserMode: LiveDemoSummary["browserMode"]) => {
+      throw new Error("The local demo harness is not available on this backend branch.");
     },
   });
 }
 
 export function useResumeCaptchaSession() {
-  const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: async (sessionId: string) => {
-      const response = await fetch(`${localDemoBaseUrl}/demo/captcha-sessions/${sessionId}/resume`, {
-        method: "POST",
-      });
-
-      return parseResponse<LiveDemoResponse>(response);
-    },
-    onSuccess: async (response) => {
-      response.dashboard.history.forEach((entry) => {
-        prependSessionHistory(entry);
-      });
-
-      await queryClient.invalidateQueries({ queryKey: agentQueryKeys.dashboard });
-      await queryClient.invalidateQueries({ queryKey: agentQueryKeys.liveDemo });
+    mutationFn: async (_sessionId: string) => {
+      throw new Error("The local demo harness is not available on this backend branch.");
     },
   });
 }

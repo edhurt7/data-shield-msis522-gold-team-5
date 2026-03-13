@@ -60,6 +60,43 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Local development
+
+Frontend:
+
+```sh
+# Node 20 is recommended
+nvm use
+npm install
+npm run dev
+```
+
+Backend:
+
+```sh
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e './backend[dev]'
+cd backend
+uvicorn app.main:app --reload
+```
+
+Optional frontend env:
+
+```sh
+cp .env.example .env
+```
+
+## Lovable + FastAPI deployment
+
+If the frontend is hosted by Lovable and the backend is deployed separately:
+
+1. Deploy the FastAPI backend to a public HTTPS URL.
+2. Set Lovable frontend env:
+   - `VITE_AGENT_API_BASE_URL=https://your-backend.example.com`
+3. Set backend `CORS_ORIGINS` to include the exact Lovable frontend origin.
+4. Prefer Postgres for the deployed backend instead of SQLite.
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
