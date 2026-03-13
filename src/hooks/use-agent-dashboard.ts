@@ -19,10 +19,31 @@ export interface DashboardSnapshot {
 }
 
 export const agentQueryKeys = {
+  dashboard: ["agent", "dashboard"] as const,
   runs: ["agent", "runs"] as const,
   run: (runId: string | null) => ["agent", "run", runId] as const,
   messages: (runId: string | null) => ["agent", "messages", runId] as const,
+  liveDemo: ["agent", "live-demo"] as const,
 } as const;
+
+export interface LiveDemoSummary {
+  browserMode: "fixture_confirmation" | "live_browser";
+  runId: string;
+  siteIds: string[];
+  totalRuns: number;
+  completedSites: string[];
+}
+
+export interface LiveDemoDashboardSnapshot extends DashboardSnapshot {}
+
+export interface LiveDemoResponse {
+  startedAt: string;
+  completedAt: string;
+  summary: LiveDemoSummary;
+  runs: unknown[];
+  dashboard: LiveDemoDashboardSnapshot;
+  captchaSessions?: unknown[];
+}
 
 async function buildDashboardSnapshot(runId: string): Promise<DashboardSnapshot> {
   const [runResponse, messagesResponse] = await Promise.all([
@@ -44,7 +65,7 @@ export function useAgentDashboard() {
   const runId = user?.runId ?? null;
 
   return useQuery({
-    queryKey: agentQueryKeys.run(runId),
+    queryKey: runId ? agentQueryKeys.run(runId) : agentQueryKeys.dashboard,
     queryFn: () => buildDashboardSnapshot(runId ?? ""),
     enabled: Boolean(runId),
   });
@@ -101,6 +122,33 @@ export function useTriggerRescan() {
     onSuccess: async () => {
       if (!runId) return;
       await queryClient.invalidateQueries({ queryKey: agentQueryKeys.run(runId) });
+    },
+  });
+}
+
+export function useLiveDemoStatus() {
+  return useQuery({
+    queryKey: agentQueryKeys.liveDemo,
+    queryFn: async () => {
+      throw new Error("The local demo harness is not available on this backend branch.");
+    },
+    retry: false,
+    enabled: false,
+  });
+}
+
+export function useRunLiveDemo() {
+  return useMutation({
+    mutationFn: async (_browserMode: LiveDemoSummary["browserMode"]) => {
+      throw new Error("The local demo harness is not available on this backend branch.");
+    },
+  });
+}
+
+export function useResumeCaptchaSession() {
+  return useMutation({
+    mutationFn: async (_sessionId: string) => {
+      throw new Error("The local demo harness is not available on this backend branch.");
     },
   });
 }

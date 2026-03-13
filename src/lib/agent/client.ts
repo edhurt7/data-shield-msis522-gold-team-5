@@ -2,9 +2,17 @@ import {
   agentApiPaths,
   appendExecutionResultRequestSchema,
   appendExecutionResultResponseSchema,
+  createMonitoredTargetSetFromRunRequestSchema,
+  createMonitoredTargetSetFromRunResponseSchema,
+  createRunRequestSchema,
+  createRunResponseSchema,
   getRunResponseSchema,
+  getMonitoredTargetSetResponseSchema,
   listChatMessagesResponseSchema,
+  listMonitoredTargetSetsResponseSchema,
   listRunsResponseSchema,
+  retrieveProceduresRequestSchema,
+  retrieveProceduresResponseSchema,
   sendChatCommandRequestSchema,
   sendChatCommandResponseSchema,
   startAgentRunRequestSchema,
@@ -15,9 +23,17 @@ import {
   triggerRescanResponseSchema,
   type AppendExecutionResultRequest,
   type AppendExecutionResultResponse,
+  type CreateMonitoredTargetSetFromRunRequest,
+  type CreateMonitoredTargetSetFromRunResponse,
+  type CreateRunRequest,
+  type CreateRunResponse,
   type GetRunResponse,
+  type GetMonitoredTargetSetResponse,
   type ListChatMessagesResponse,
+  type ListMonitoredTargetSetsResponse,
   type ListRunsResponse,
+  type RetrieveProceduresRequest,
+  type RetrieveProceduresResponse,
   type SendChatCommandRequest,
   type SendChatCommandResponse,
   type StartAgentRunRequest,
@@ -95,6 +111,11 @@ export function createAgentApiClient(options: AgentApiClientOptions = {}) {
   }
 
   return {
+    async createRun(input: CreateRunRequest): Promise<CreateRunResponse> {
+      const body = createRunRequestSchema.parse(input);
+      return request(agentApiPaths.runs, { method: "POST" }, body, createRunResponseSchema);
+    },
+
     async startRun(input: StartAgentRunRequest): Promise<StartAgentRunResponse> {
       const body = startAgentRunRequestSchema.parse(input);
       return request(agentApiPaths.startRun, { method: "POST" }, body, startAgentRunResponseSchema);
@@ -106,6 +127,42 @@ export function createAgentApiClient(options: AgentApiClientOptions = {}) {
 
     async getRun(runId: string): Promise<GetRunResponse> {
       return request(agentApiPaths.run(runId), { method: "GET" }, undefined, getRunResponseSchema);
+    },
+
+    async retrieveProcedures(input: RetrieveProceduresRequest): Promise<RetrieveProceduresResponse> {
+      const body = retrieveProceduresRequestSchema.parse(input);
+      return request(agentApiPaths.retrieveProcedures, { method: "POST" }, body, retrieveProceduresResponseSchema);
+    },
+
+    async listMonitoredTargetSets(): Promise<ListMonitoredTargetSetsResponse> {
+      return request(
+        agentApiPaths.monitoredTargetSets,
+        { method: "GET" },
+        undefined,
+        listMonitoredTargetSetsResponseSchema,
+      );
+    },
+
+    async getMonitoredTargetSet(targetSetId: string): Promise<GetMonitoredTargetSetResponse> {
+      return request(
+        `${agentApiPaths.monitoredTargetSets}/${targetSetId}`,
+        { method: "GET" },
+        undefined,
+        getMonitoredTargetSetResponseSchema,
+      );
+    },
+
+    async createMonitoredTargetSetFromRun(
+      runId: string,
+      input: CreateMonitoredTargetSetFromRunRequest,
+    ): Promise<CreateMonitoredTargetSetFromRunResponse> {
+      const body = createMonitoredTargetSetFromRunRequestSchema.parse(input);
+      return request(
+        agentApiPaths.runMonitoredTargetSet(runId),
+        { method: "POST" },
+        body,
+        createMonitoredTargetSetFromRunResponseSchema,
+      );
     },
 
     async listChatMessages(runId: string): Promise<ListChatMessagesResponse> {

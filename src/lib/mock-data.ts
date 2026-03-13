@@ -13,6 +13,31 @@ export interface BrokerSite {
   foundData?: {
     fields: string[];
     optOutMessage?: string;
+    failureReason?: string;
+    manualFallback?: {
+      packet: string;
+      entryUrl?: string;
+      inputs: Array<{
+        key: string;
+        label: string;
+        value: string;
+        description?: string;
+      }>;
+      recommendedNextStep?: string;
+    };
+  };
+  action?: string;
+  demoMetadata?: {
+    isFixtureBacked?: boolean;
+    manualFallbackReady?: boolean;
+    outcomeLabel?: string;
+    outcomeDetail?: string;
+    captchaSession?: {
+      sessionId: string;
+      instruction: string;
+      browserHint: string;
+      updatedAt: string;
+    };
   };
 }
 
@@ -22,6 +47,13 @@ export interface HistoryEntry {
   site: string;
   action: string;
   status: HistoryStatus;
+  scan?: string;
+  runId?: string;
+  totalSites?: number;
+  foundSites?: number;
+  submittedSites?: number;
+  blockedSites?: number;
+  sites?: BrokerSite[];
 }
 
 export interface ChatMessage {
@@ -92,12 +124,15 @@ export function buildBrokerSites(run: AgentRunState): BrokerSite[] {
     return {
       ...site,
       status,
+      action: run.timeline.find((event) => event.siteId === site.id)?.message ?? "No activity recorded yet.",
       foundData: status === "found" ? getFoundData(run, site.id) : undefined,
     };
   });
 }
 
 export function buildHistoryEntries(run: AgentRunState): HistoryEntry[] {
+  const sites = buildBrokerSites(run);
+  const summary = getScanSummary(sites);
   const eventEntries = run.timeline
     .filter((event) => event.siteId)
     .map((event) => {
@@ -118,6 +153,13 @@ export function buildHistoryEntries(run: AgentRunState): HistoryEntry[] {
         id: event.eventId,
         date: event.createdAt.slice(0, 10),
         site: BROKER_DIRECTORY.find((site) => site.id === event.siteId)?.name ?? event.siteId ?? "Unknown",
+        scan: `Scan ${run.runId.slice(-6)}`,
+        runId: run.runId,
+        totalSites: summary.total,
+        foundSites: summary.found,
+        submittedSites: summary.optedOut,
+        blockedSites: summary.failed,
+        sites,
         action,
         status,
       };
