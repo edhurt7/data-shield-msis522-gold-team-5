@@ -23,6 +23,7 @@ from app.schemas.agent import (
     StartAgentRunRequest,
     UserIntent,
     WorkflowEventRead,
+    _serialize_datetime,
 )
 from app.services.langgraph_bridge import LangGraphBridgeError, LangGraphWorkflowResult, run_langgraph_workflow
 from app.services.procedure_service import retrieve_relevant_procedures
@@ -38,6 +39,42 @@ DEFAULT_PHONE_BY_SITE = {
 
 def utcnow() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _iso_utc(value: datetime | None = None) -> str:
+    return _serialize_datetime(value or utcnow())
+
+
+def _is_timestamp_key(key: str | None) -> bool:
+    if not key:
+        return False
+    normalized = key.strip()
+    return (
+        normalized.endswith("At")
+        or normalized.endswith("_at")
+        or normalized.endswith("_timestamp")
+        or normalized in {"scan_timestamp"}
+    )
+
+
+def _normalize_timestamp_string(value: str) -> str:
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    return _serialize_datetime(parsed)
+
+
+def _normalize_json_timestamps(value: object, key: str | None = None) -> object:
+    if isinstance(value, dict):
+        return {item_key: _normalize_json_timestamps(item_value, item_key) for item_key, item_value in value.items()}
+    if isinstance(value, list):
+        return [_normalize_json_timestamps(item, key) for item in value]
+    if isinstance(value, datetime):
+        return _serialize_datetime(value)
+    if isinstance(value, str) and _is_timestamp_key(key):
+        try:
+            return _normalize_timestamp_string(value)
+        except ValueError:
+            return value
+    return value
 
 
 def _split_name(full_name: str) -> tuple[str, str]:
@@ -133,7 +170,7 @@ def _candidate_evidence(run: AgentRun, site_id: str, listing_url: str) -> list[d
             "sourceType": "listing_page",
             "sourceUrl": listing_url,
             "excerpt": excerpt,
-            "capturedAt": utcnow().isoformat(),
+            "capturedAt": _iso_utc(),
             "fields": [],
         }
     ]
@@ -151,7 +188,7 @@ def _discovery_result_for_candidate(run: AgentRun, candidate: dict[str, object])
     )
     return {
         "site": candidate["siteName"],
-        "scan_timestamp": utcnow().isoformat(),
+        "scan_timestamp": _iso_utc(),
         "found": True,
         "candidates": [
             {
@@ -233,7 +270,7 @@ def _draft_for_candidate(
     procedure_id: str,
     submission_channel: str,
 ) -> dict[str, object]:
-    generated_at = utcnow().isoformat()
+    generated_at = _iso_utc()
     facts_used = candidate["extractedFields"]
     listing_url = candidate["listingUrl"]
     if submission_channel == "email":
@@ -522,7 +559,7 @@ def _process_run_workflow_deterministic(db: Session, run: AgentRun, *, reset_sta
             "source": "rag",
             "sourceDocumentUri": selected.summary or selected.procedure_id,
             "sourceVersion": selected.procedure_id.rsplit("-", 1)[-1],
-            "retrievedAt": retrieval.retrieved_at.isoformat(),
+            "retrievedAt": _serialize_datetime(retrieval.retrieved_at),
             "submissionChannel": "email" if selected.channel_hint == "email" else "webform",
             "freshnessDays": selected.freshness_days or 0,
             "isComplete": True,
@@ -573,7 +610,7 @@ def _process_run_workflow_deterministic(db: Session, run: AgentRun, *, reset_sta
                 "steps": procedure["steps"],
                 "draft": draft,
             },
-            "createdAt": utcnow().isoformat(),
+            "createdAt": _iso_utc(),
         }
         run.handoffs = [*(run.handoffs or []), handoff]
         run.pending_review_reasons = sorted(set([*(run.pending_review_reasons or []), "manual_submission_required"]))
@@ -671,13 +708,13 @@ def build_run_state(run: AgentRun) -> AgentRunStateRead:
         currentPhase=run.current_phase,
         status=run.status,
         consentConfirmed=run.consent_confirmed,
-        targets=run.targets or [],
-        candidates=run.candidates or [],
-        matchDecisions=run.match_decisions or [],
-        procedures=run.procedures or [],
-        drafts=run.drafts or [],
-        handoffs=run.handoffs or [],
-        outcomes=run.outcomes or [],
+        targets=_normalize_json_timestamps(run.targets or []),
+        candidates=_normalize_json_timestamps(run.candidates or []),
+        matchDecisions=_normalize_json_timestamps(run.match_decisions or []),
+        procedures=_normalize_json_timestamps(run.procedures or []),
+        drafts=_normalize_json_timestamps(run.drafts or []),
+        handoffs=_normalize_json_timestamps(run.handoffs or []),
+        outcomes=_normalize_json_timestamps(run.outcomes or []),
         pendingReviewReasons=run.pending_review_reasons or [],
         timeline=timeline,
         createdAt=run.created_at,
@@ -1119,13 +1156,13 @@ def append_execution_result(
         "candidateId": payload.candidate_url,
         "status": "needs_follow_up" if payload.status in {"pending", "manual_required"} else payload.status,
         "confirmationId": payload.ticket_ids[0] if payload.ticket_ids else None,
-        "observedAt": utcnow().isoformat(),
+        "observedAt": _iso_utc(),
         "evidence": [
             {
                 "sourceType": "execution_log",
                 "sourceUrl": payload.screenshot_ref,
                 "excerpt": payload.confirmation_text or payload.error_text or f"Execution result: {payload.status}",
-                "capturedAt": utcnow().isoformat(),
+                "capturedAt": _iso_utc(),
                 "fields": [],
             }
         ],
@@ -1192,7 +1229,7 @@ def plan_submission(db: Session, run: AgentRun, site: str, candidate_url: str, p
             "steps": payload.get("steps", []),
             "draft": payload,
         },
-        "createdAt": utcnow().isoformat(),
+        "createdAt": _iso_utc(),
     }
     removal = get_or_create_removal_request(
         db,
