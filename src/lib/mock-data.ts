@@ -1,4 +1,5 @@
 import type { AgentRunState } from "@/lib/agent";
+import type { ChatMessage as ApiChatMessage } from "@/lib/agent/api";
 import { mockAgentRunState } from "@/lib/agent/mock-run";
 
 export type ScanStatus = "scanning" | "found" | "not_found" | "opted_out" | "failed";
@@ -135,6 +136,15 @@ export function buildChatMessagesFromTimeline(run: AgentRunState): ChatMessage[]
       content: event.message,
       timestamp: event.createdAt,
     }));
+}
+
+export function buildChatMessagesFromApi(messages: ApiChatMessage[]): ChatMessage[] {
+  return messages.map((message) => ({
+    id: message.id,
+    role: message.role === "system" ? "assistant" : message.role,
+    content: message.content,
+    timestamp: message.createdAt,
+  }));
 }
 
 export const mockBrokerSites: BrokerSite[] = buildBrokerSites(mockAgentRunState);

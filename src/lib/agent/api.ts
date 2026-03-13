@@ -62,6 +62,10 @@ export const sendChatCommandResponseSchema = z.object({
   events: z.array(workflowEventSchema).default([]),
 });
 
+export const listChatMessagesResponseSchema = z.object({
+  messages: z.array(chatMessageSchema).default([]),
+});
+
 export const approvalActionSchema = z.enum(["approve", "reject", "request_changes"]);
 
 export const submitApprovalRequestSchema = z.object({
@@ -113,6 +117,7 @@ export const agentApiPaths = {
   runs: "/api/agent/runs",
   startRun: "/api/agent/runs/start",
   run: (runId: string) => `/api/agent/runs/${runId}`,
+  runMessages: (runId: string) => `/api/agent/runs/${runId}/messages`,
   runChat: (runId: string) => `/api/agent/runs/${runId}/chat`,
   runApproval: (runId: string) => `/api/agent/runs/${runId}/approval`,
   runRescan: (runId: string) => `/api/agent/runs/${runId}/rescan`,
@@ -130,6 +135,7 @@ export type ListRunsResponse = z.infer<typeof listRunsResponseSchema>;
 export type ChatMessage = z.infer<typeof chatMessageSchema>;
 export type SendChatCommandRequest = z.infer<typeof sendChatCommandRequestSchema>;
 export type SendChatCommandResponse = z.infer<typeof sendChatCommandResponseSchema>;
+export type ListChatMessagesResponse = z.infer<typeof listChatMessagesResponseSchema>;
 export type ApprovalAction = z.infer<typeof approvalActionSchema>;
 export type SubmitApprovalRequest = z.infer<typeof submitApprovalRequestSchema>;
 export type SubmitApprovalResponse = z.infer<typeof submitApprovalResponseSchema>;

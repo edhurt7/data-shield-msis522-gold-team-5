@@ -6,6 +6,7 @@ from app.schemas.agent import (
     AppendExecutionResultRequest,
     AppendExecutionResultResponse,
     GetRunResponse,
+    ListChatMessagesResponse,
     ListRunsResponse,
     PlanSubmissionRequest,
     PlanSubmissionResponse,
@@ -21,6 +22,7 @@ from app.schemas.agent import (
 from app.services.run_service import (
     build_chat_message,
     build_run_state,
+    list_chat_messages,
     create_run,
     get_run,
     handle_chat_command,
@@ -53,6 +55,14 @@ def get_run_by_id(run_id: str, db: Session = Depends(get_db)) -> GetRunResponse:
     if not run:
         raise HTTPException(status_code=404, detail="Run not found.")
     return GetRunResponse(run=build_run_state(run))
+
+
+@router.get("/runs/{run_id}/messages", response_model=ListChatMessagesResponse)
+def get_run_messages(run_id: str, db: Session = Depends(get_db)) -> ListChatMessagesResponse:
+    run = get_run(db, run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found.")
+    return list_chat_messages(run)
 
 
 @router.post("/runs/{run_id}/chat", response_model=SendChatCommandResponse)

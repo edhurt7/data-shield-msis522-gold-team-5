@@ -2,24 +2,26 @@ import {
   agentApiPaths,
   appendExecutionResultRequestSchema,
   appendExecutionResultResponseSchema,
-  createRunRequestSchema,
-  createRunResponseSchema,
   getRunResponseSchema,
+  listChatMessagesResponseSchema,
   listRunsResponseSchema,
   sendChatCommandRequestSchema,
   sendChatCommandResponseSchema,
+  startAgentRunRequestSchema,
+  startAgentRunResponseSchema,
   submitApprovalRequestSchema,
   submitApprovalResponseSchema,
   triggerRescanRequestSchema,
   triggerRescanResponseSchema,
   type AppendExecutionResultRequest,
   type AppendExecutionResultResponse,
-  type CreateRunRequest,
-  type CreateRunResponse,
   type GetRunResponse,
+  type ListChatMessagesResponse,
   type ListRunsResponse,
   type SendChatCommandRequest,
   type SendChatCommandResponse,
+  type StartAgentRunRequest,
+  type StartAgentRunResponse,
   type SubmitApprovalRequest,
   type SubmitApprovalResponse,
   type TriggerRescanRequest,
@@ -58,14 +60,30 @@ export function createAgentApiClient(options: AgentApiClientOptions = {}) {
     requestBody: TRequest | undefined,
     parser: { parse: (value: unknown) => TResponse },
   ) {
-    const response = await fetchFn(`${baseUrl}${path}`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...(init.headers ?? {}),
-      },
-      ...init,
-      body: requestBody ? JSON.stringify(requestBody) : init.body,
-    });
+    if (!baseUrl) {
+      throw new AgentApiError(
+        "Agent API base URL is not configured. Set VITE_AGENT_API_BASE_URL to your deployed backend.",
+        0,
+      );
+    }
+
+    let response: Response;
+    try {
+      response = await fetchFn(`${baseUrl}${path}`, {
+        headers: {
+          "Content-Type": "application/json",
+          ...(init.headers ?? {}),
+        },
+        ...init,
+        body: requestBody ? JSON.stringify(requestBody) : init.body,
+      });
+    } catch (error) {
+      throw new AgentApiError(
+        `Unable to reach the Agent API at ${baseUrl}. Check CORS, deployment status, and VITE_AGENT_API_BASE_URL.`,
+        0,
+        error,
+      );
+    }
 
     const payload = await parseJson(response);
 
@@ -77,9 +95,9 @@ export function createAgentApiClient(options: AgentApiClientOptions = {}) {
   }
 
   return {
-    async createRun(input: CreateRunRequest): Promise<CreateRunResponse> {
-      const body = createRunRequestSchema.parse(input);
-      return request(agentApiPaths.runs, { method: "POST" }, body, createRunResponseSchema);
+    async startRun(input: StartAgentRunRequest): Promise<StartAgentRunResponse> {
+      const body = startAgentRunRequestSchema.parse(input);
+      return request(agentApiPaths.startRun, { method: "POST" }, body, startAgentRunResponseSchema);
     },
 
     async listRuns(): Promise<ListRunsResponse> {
@@ -88,6 +106,10 @@ export function createAgentApiClient(options: AgentApiClientOptions = {}) {
 
     async getRun(runId: string): Promise<GetRunResponse> {
       return request(agentApiPaths.run(runId), { method: "GET" }, undefined, getRunResponseSchema);
+    },
+
+    async listChatMessages(runId: string): Promise<ListChatMessagesResponse> {
+      return request(agentApiPaths.runMessages(runId), { method: "GET" }, undefined, listChatMessagesResponseSchema);
     },
 
     async sendChatCommand(runId: string, input: SendChatCommandRequest): Promise<SendChatCommandResponse> {

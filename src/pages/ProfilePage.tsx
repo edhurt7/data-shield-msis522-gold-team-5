@@ -1,4 +1,5 @@
 import { useAuth } from "@/lib/auth-context";
+import { useTriggerRescan } from "@/hooks/use-agent-dashboard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -7,6 +8,7 @@ import { toast } from "sonner";
 
 export default function ProfilePage() {
   const { user } = useAuth();
+  const triggerRescan = useTriggerRescan();
 
   const proxyEmail = user?.proxyEmail || "shield-a7x29k@detraceme.io";
 
@@ -73,6 +75,10 @@ export default function ProfilePage() {
               <p className="mt-1 text-sm text-foreground">{user?.lastName || "Doe"}</p>
             </div>
             <div>
+              <p className="text-xs font-medium text-muted-foreground">City</p>
+              <p className="mt-1 text-sm text-foreground">{user?.city || "Seattle"}</p>
+            </div>
+            <div>
               <p className="text-xs font-medium text-muted-foreground">
                 {user?.identifierType === "dob" ? "Date of Birth" : "State"}
               </p>
@@ -93,7 +99,14 @@ export default function ProfilePage() {
           <Button
             variant="outline"
             className="gap-2"
-            onClick={() => toast.success("Manual re-scan started! Check the dashboard for progress.")}
+            onClick={async () => {
+              try {
+                await triggerRescan.mutateAsync("Manual re-scan requested from profile page.");
+                toast.success("Manual re-scan started! Check the dashboard for progress.");
+              } catch (error) {
+                toast.error(error instanceof Error ? error.message : "Unable to trigger re-scan.");
+              }
+            }}
           >
             <RefreshCw className="h-4 w-4" />
             Trigger Manual Re-scan

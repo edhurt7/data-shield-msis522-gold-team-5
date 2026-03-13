@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import { US_STATES } from "@/lib/mock-data";
+import { useStartAgentRun } from "@/hooks/use-agent-dashboard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,13 +12,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShieldLogo } from "@/components/ShieldLogo";
 import { Shield, ArrowRight, Info } from "lucide-react";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 export default function OnboardingPage() {
-  const { completeOnboarding } = useAuth();
+  const { completeOnboarding, attachRun } = useAuth();
   const navigate = useNavigate();
+  const startRunMutation = useStartAgentRun();
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [city, setCity] = useState("");
   const [identifierType, setIdentifierType] = useState<"state" | "dob">("state");
   const [state, setState] = useState("");
   const [dob, setDob] = useState("");
@@ -26,19 +30,50 @@ export default function OnboardingPage() {
   const isValid =
     firstName.trim() &&
     lastName.trim() &&
+    city.trim() &&
     consent &&
     (identifierType === "state" ? state : dob);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!isValid) return;
+
     completeOnboarding({
       firstName,
       lastName,
+      city,
       identifierType,
       state: identifierType === "state" ? state : undefined,
       dob: identifierType === "dob" ? dob : undefined,
     });
-    navigate("/dashboard");
+
+    try {
+      const response = await startRunMutation.mutateAsync({
+        seed_profile: {
+          full_name: `${firstName.trim()} ${lastName.trim()}`,
+          name_variants: [`${firstName.trim().charAt(0)}. ${lastName.trim()}`],
+          location: {
+            city: city.trim(),
+            state: identifierType === "state" ? state : "Washington",
+          },
+          approx_age: null,
+          privacy_email: `shield-${Math.random().toString(36).slice(2, 8)}@detraceme.io`,
+          optional: {
+            phone_last4: null,
+            prior_cities: [],
+          },
+          consent: true,
+        },
+        request_text: `Search for ${firstName.trim()} ${lastName.trim()} and start my first privacy scan.`,
+        requested_sites: ["fastpeoplesearch", "spokeo", "radaris"],
+      });
+
+      attachRun(response.run.runId, response.run.profile.proxyEmail);
+      toast.success("Your first scan has been created.");
+      navigate("/dashboard");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to create your first scan.";
+      toast.error(message);
+    }
   };
 
   return (
@@ -69,6 +104,11 @@ export default function OnboardingPage() {
               <Label htmlFor="lastName">Last Name</Label>
               <Input id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Doe" />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="city">Current City</Label>
+            <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Seattle" />
           </div>
 
           <Tabs value={identifierType} onValueChange={(v) => setIdentifierType(v as "state" | "dob")}>
@@ -108,9 +148,9 @@ export default function OnboardingPage() {
           </div>
         </div>
 
-        <Button className="w-full gap-2 text-base" size="lg" disabled={!isValid} onClick={handleSubmit}>
+        <Button className="w-full gap-2 text-base" size="lg" disabled={!isValid || startRunMutation.isPending} onClick={() => void handleSubmit()}>
           <Shield className="h-4 w-4" />
-          Start My First Scan
+          {startRunMutation.isPending ? "Starting Scan..." : "Start My First Scan"}
           <ArrowRight className="h-4 w-4" />
         </Button>
       </motion.div>

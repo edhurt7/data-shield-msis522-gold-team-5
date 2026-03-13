@@ -26,6 +26,23 @@ This directory contains the first working FastAPI backend scaffold for the proje
 3. Run Alembic migrations or rely on auto-create during development.
 4. Start the server with `uvicorn app.main:app --reload`.
 
+## Lovable deployment
+
+For a Lovable-hosted frontend with a separately deployed backend:
+
+1. Deploy this FastAPI service to a public HTTPS URL.
+2. Set the Lovable frontend environment variable:
+   - `VITE_AGENT_API_BASE_URL=https://your-backend.example.com`
+3. Set backend `CORS_ORIGINS` to the exact Lovable frontend origin.
+4. For production, replace SQLite with Postgres by setting `DATABASE_URL`.
+
+Example backend env values:
+
+```env
+DATABASE_URL=postgresql+psycopg://user:password@host:5432/datashield
+CORS_ORIGINS=["https://your-lovable-app-domain"]
+```
+
 ## Notes
 
 - The default database is SQLite for local development speed.

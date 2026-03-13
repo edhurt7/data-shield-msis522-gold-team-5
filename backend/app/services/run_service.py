@@ -10,6 +10,7 @@ from app.schemas.agent import (
     AgentRunStateRead,
     AppendExecutionResultRequest,
     ChatMessageRead,
+    ListChatMessagesResponse,
     SearchProfile,
     StartAgentRunRequest,
     UserIntent,
@@ -113,6 +114,11 @@ def build_chat_message(message: ChatMessage) -> ChatMessageRead:
         content=message.content,
         createdAt=message.created_at,
     )
+
+
+def list_chat_messages(run: AgentRun) -> ListChatMessagesResponse:
+    messages = [build_chat_message(message) for message in run.chat_messages]
+    return ListChatMessagesResponse(messages=messages)
 
 
 def list_runs(db: Session) -> list[AgentRunStateRead]:

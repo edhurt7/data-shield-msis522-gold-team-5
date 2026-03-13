@@ -2,6 +2,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { HistoryStatusBadge } from "@/components/StatusBadge";
 import { useAgentDashboard } from "@/hooks/use-agent-dashboard";
 import { mockHistory } from "@/lib/mock-data";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function HistoryPage() {
   const dashboardQuery = useAgentDashboard();
@@ -13,6 +14,15 @@ export default function HistoryPage() {
         <h1 className="font-display text-2xl font-bold text-foreground">Activity Log</h1>
         <p className="text-sm text-muted-foreground">History of all scans and removal actions</p>
       </div>
+
+      {dashboardQuery.isError && (
+        <Alert variant="destructive">
+          <AlertTitle>History unavailable</AlertTitle>
+          <AlertDescription>
+            {dashboardQuery.error instanceof Error ? dashboardQuery.error.message : "Unable to load activity history."}
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="rounded-lg border bg-card">
         <Table>

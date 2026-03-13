@@ -1,7 +1,8 @@
 from functools import lru_cache
+import json
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -38,6 +39,27 @@ class Settings(BaseSettings):
     privacy_from_email: str | None = None
 
     storage_dir: Path = BASE_DIR / "data" / "artifacts"
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, value: str | list[str]) -> list[str]:
+        if isinstance(value, list):
+            return value
+
+        if not isinstance(value, str):
+            raise TypeError("CORS origins must be provided as a list or string.")
+
+        stripped = value.strip()
+        if not stripped:
+            return []
+
+        if stripped.startswith("["):
+            parsed = json.loads(stripped)
+            if not isinstance(parsed, list):
+                raise ValueError("CORS_ORIGINS JSON must be an array.")
+            return [str(item).strip() for item in parsed if str(item).strip()]
+
+        return [item.strip() for item in stripped.split(",") if item.strip()]
 
 
 @lru_cache

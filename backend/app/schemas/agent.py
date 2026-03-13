@@ -144,6 +144,10 @@ class SendChatCommandResponse(BaseModel):
     events: list[WorkflowEventRead] = Field(default_factory=list)
 
 
+class ListChatMessagesResponse(BaseModel):
+    messages: list[ChatMessageRead] = Field(default_factory=list)
+
+
 class SubmitApprovalRequest(BaseModel):
     action: ApprovalAction
     siteIds: list[str] = Field(default_factory=list)
