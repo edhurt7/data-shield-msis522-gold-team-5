@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import type { ScanStatus, HistoryStatus } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
-import { Loader2, Check, X, AlertTriangle, Search, Eye } from "lucide-react";
+import { Loader2, Check, AlertTriangle, Eye, Clock3, Ban } from "lucide-react";
 
 const scanConfig: Record<ScanStatus, { label: string; className: string; icon: React.ReactNode }> = {
   scanning: {
@@ -20,9 +20,19 @@ const scanConfig: Record<ScanStatus, { label: string; className: string; icon: R
     icon: <Check className="h-3 w-3" />,
   },
   opted_out: {
-    label: "Opted Out",
+    label: "Submitted",
     className: "bg-success/15 text-success border-success/20",
     icon: <Check className="h-3 w-3" />,
+  },
+  needs_review: {
+    label: "Needs Review",
+    className: "bg-warning/15 text-warning border-warning/20",
+    icon: <Clock3 className="h-3 w-3" />,
+  },
+  blocked: {
+    label: "Blocked",
+    className: "bg-destructive/10 text-destructive border-destructive/25",
+    icon: <Ban className="h-3 w-3" />,
   },
   failed: {
     label: "Failed",
@@ -32,9 +42,9 @@ const scanConfig: Record<ScanStatus, { label: string; className: string; icon: R
 };
 
 const historyConfig: Record<HistoryStatus, { label: string; className: string }> = {
-  pending: { label: "Pending", className: "bg-warning/15 text-warning border-warning/20" },
-  confirmed: { label: "Confirmed", className: "bg-success/15 text-success border-success/20" },
-  re_listed: { label: "Re-listed", className: "bg-destructive/15 text-destructive border-destructive/20" },
+  in_progress: { label: "In Progress", className: "bg-info/15 text-info border-info/20" },
+  completed: { label: "Completed", className: "bg-success/15 text-success border-success/20" },
+  needs_attention: { label: "Needs Attention", className: "bg-warning/15 text-warning border-warning/20" },
 };
 
 export function ScanStatusBadge({ status }: { status: ScanStatus }) {

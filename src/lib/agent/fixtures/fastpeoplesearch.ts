@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import type { DiscoveryResult, ExecutionResult, ProcedureSourceChunk, SeedProfile } from "@/lib/agent";
+import type { DiscoveryResult, ExecutionResult, PageContentArtifact, ProcedureSourceChunk, SeedProfile } from "@/lib/agent";
 
 export const fastPeopleSearchSeedProfile: SeedProfile = {
   full_name: "Jane Doe",
@@ -28,6 +28,15 @@ export const fastPeopleSearchListingPageText = readFileSync(
 ).trim();
 
 export const fastPeopleSearchCandidateUrl = "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa";
+export const fastPeopleSearchPageArtifact: PageContentArtifact = {
+  visible_text: fastPeopleSearchListingPageText,
+  url: fastPeopleSearchCandidateUrl,
+  screenshot_ref: "fixtures/fastpeoplesearch-listing.png",
+  extracted_metadata: {
+    title: "Jane Doe in Seattle, WA | FastPeopleSearch",
+    page_category: "listing_detail",
+  },
+};
 
 export const fastPeopleSearchProcedureChunks: ProcedureSourceChunk[] = [
   {
@@ -60,6 +69,7 @@ export const fastPeopleSearchFixture = {
   site: "FastPeopleSearch",
   requestText: "Search for my name + Seattle and submit removals for everything you find.",
   seedProfile: fastPeopleSearchSeedProfile,
+  pageArtifact: fastPeopleSearchPageArtifact,
   listingPageText: fastPeopleSearchListingPageText,
   candidateUrl: fastPeopleSearchCandidateUrl,
   procedureChunks: fastPeopleSearchProcedureChunks,

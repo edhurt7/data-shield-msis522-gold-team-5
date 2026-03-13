@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  agentGraphTopology,
+  agentGraphTopologySchema,
   defaultAgentPolicy,
   discoveryParseInputSchema,
   graphContextSchema,
@@ -13,11 +15,22 @@ import {
 } from "@/lib/agent";
 
 describe("agent graph node contracts", () => {
+  it("defines the canonical six-step graph topology", () => {
+    expect(agentGraphTopologySchema.parse(agentGraphTopology)).toEqual([
+      { from: "validate_consent", to: "discovery_parse" },
+      { from: "discovery_parse", to: "retrieve_procedure" },
+      { from: "retrieve_procedure", to: "draft_optout" },
+      { from: "draft_optout", to: "plan_submission" },
+      { from: "plan_submission", to: "interpret_result" },
+    ]);
+  });
+
   it("resolves graph context defaults and per-run overrides", () => {
     const result = graphContextSchema.parse({
       run_id: "run_graph_policy_001",
       policy_overrides: {
         max_submission_retries: 2,
+        monitoring_cadence_days: 14,
         pending_confirmation_strategy: "request_user_review",
       },
     });
@@ -25,11 +38,13 @@ describe("agent graph node contracts", () => {
     expect(result.policy_defaults).toEqual(defaultAgentPolicy);
     expect(result.policy_overrides).toEqual({
       max_submission_retries: 2,
+      monitoring_cadence_days: 14,
       pending_confirmation_strategy: "request_user_review",
     });
     expect(result.policy).toMatchObject({
       ...defaultAgentPolicy,
       max_submission_retries: 2,
+      monitoring_cadence_days: 14,
       pending_confirmation_strategy: "request_user_review",
     });
   });
@@ -85,7 +100,15 @@ describe("agent graph node contracts", () => {
           consent: true,
         },
         site: "FastPeopleSearch",
-        page_text: "Jane Doe, Seattle, WA",
+        page_artifact: {
+          visible_text: "Jane Doe, Seattle, WA",
+          url: "https://example.com/listing/jane-doe",
+          screenshot_ref: "artifacts/jane-doe.png",
+          extracted_metadata: {
+            title: "Jane Doe listing",
+            page_category: "listing_detail",
+          },
+        },
       }).success,
     ).toBe(true);
 

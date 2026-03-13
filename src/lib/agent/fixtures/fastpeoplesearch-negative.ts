@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import type { ExecutionResult, SeedProfile } from "@/lib/agent";
+import type { ExecutionResult, PageContentArtifact, SeedProfile } from "@/lib/agent";
 
 const sharedSeedProfile: SeedProfile = {
   full_name: "Jane Doe",
@@ -37,6 +37,18 @@ export const ambiguousFastPeopleSearchFixture = {
   site: "FastPeopleSearch",
   requestText: "Search for my name + Seattle and submit removals for everything you find.",
   seedProfile: sharedSeedProfile,
+  pageArtifact: {
+    visible_text: readFileSync(
+      fixtureArtifactPath("fastpeoplesearch", "listing-page-ambiguous.txt"),
+      "utf8",
+    ).trim(),
+    url: "https://fastpeoplesearch.test/listing/possible-jane-doe",
+    screenshot_ref: "fixtures/fastpeoplesearch-ambiguous.png",
+    extracted_metadata: {
+      title: "Possible Jane Doe matches | FastPeopleSearch",
+      page_category: "listing_detail",
+    },
+  } satisfies PageContentArtifact,
   listingPageText: readFileSync(
     fixtureArtifactPath("fastpeoplesearch", "listing-page-ambiguous.txt"),
     "utf8",
@@ -54,6 +66,14 @@ function makeListingFixture(pageText: string, candidateUrl: string) {
     site: "FastPeopleSearch",
     requestText: "Search for my name + Seattle and submit removals for everything you find.",
     seedProfile: sharedSeedProfile,
+    pageArtifact: {
+      visible_text: pageText,
+      url: candidateUrl,
+      screenshot_ref: null,
+      extracted_metadata: {
+        page_category: "listing_detail",
+      },
+    } satisfies PageContentArtifact,
     listingPageText: pageText,
     candidateUrl,
   };
@@ -132,6 +152,15 @@ export const emailDraftQualityFixture = {
   site: "Radaris",
   requestText: "Find me and submit the opt-out.",
   seedProfile: sharedSeedProfile,
+  pageArtifact: {
+    visible_text: "Jane Doe, Seattle, Washington. Age 35. Prior city Tacoma.",
+    url: "https://radaris.test/listing/jane-doe-seattle-wa",
+    screenshot_ref: null,
+    extracted_metadata: {
+      title: "Jane Doe, Seattle WA | Radaris",
+      page_category: "listing_detail",
+    },
+  } satisfies PageContentArtifact,
   listingPageText: "Jane Doe, Seattle, Washington. Age 35. Prior city Tacoma.",
   candidateUrl: "https://radaris.test/listing/jane-doe-seattle-wa",
   procedureChunks: [

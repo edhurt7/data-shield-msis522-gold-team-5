@@ -1,30 +1,39 @@
+import { ZodError } from "zod";
+
 import type { GraphContext } from "@/lib/agent/graph";
 import type { AgentWorkflowNodes } from "@/lib/agent/workflow";
 import type {
+  DiscoveryResult,
+} from "@/lib/agent/contracts";
+import type {
   DraftOptOutInput,
   DraftOptOutOutput,
-  DiscoveryResult,
   InterpretResultOutput,
   RetrieveProcedureOutput,
   ValidateConsentInput,
   ValidateConsentOutput,
-} from "@/lib/agent/contracts";
+} from "@/lib/agent/graph";
 import {
   draftGeneratorPrompt,
   listingClassifierPrompt,
   postExecutionVerifierPrompt,
   procedureSelectorPrompt,
+  type PromptName,
   type DraftPromptInput,
   type ListingPromptInput,
   type PostExecutionPromptInput,
   type ProcedurePromptInput,
   type PromptDefinition,
-  type PromptName,
 } from "@/lib/agent/prompts";
 
 export interface StructuredLlmRequest<TInput, TOutput> {
   prompt: PromptDefinition<TInput, TOutput>;
   input: TInput;
+}
+
+export interface PromptTraceEntry {
+  prompt_name: PromptName;
+  prompt_version: string;
 }
 
 export interface StructuredLlmAdapter {
@@ -57,6 +66,23 @@ export class StructuredLlmError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "StructuredLlmError";
+  }
+}
+
+export class StructuredLlmOutputValidationError extends StructuredLlmError {
+  promptName: PromptName;
+
+  issues: ZodError["issues"];
+
+  rawOutput: unknown;
+
+  constructor(promptName: PromptName, error: ZodError, rawOutput: unknown) {
+    super(`Structured LLM output for ${promptName} failed schema validation.`);
+    this.name = "StructuredLlmOutputValidationError";
+    this.promptName = promptName;
+    this.issues = error.issues;
+    this.rawOutput = rawOutput;
+    this.cause = error;
   }
 }
 
@@ -144,6 +170,54 @@ function parseStructuredJson(content: string) {
   }
 }
 
+function parsePromptOutput<TInput, TOutput>(
+  prompt: PromptDefinition<TInput, TOutput>,
+  structuredOutput: unknown,
+): TOutput {
+  try {
+    return prompt.outputSchema.parse(structuredOutput);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      throw new StructuredLlmOutputValidationError(prompt.name, error, structuredOutput);
+    }
+
+    throw error;
+  }
+}
+
+function toPromptTraceEntry<TInput, TOutput>(prompt: PromptDefinition<TInput, TOutput>): PromptTraceEntry {
+  return {
+    prompt_name: prompt.name,
+    prompt_version: prompt.version,
+  };
+}
+
+type PromptBackedNode<TArgs extends unknown[], TResult> = ((...args: TArgs) => TResult) & {
+  promptTrace?: PromptTraceEntry;
+};
+
+function withPromptTrace<TArgs extends unknown[], TResult, TInput, TOutput>(
+  fn: (...args: TArgs) => TResult,
+  prompt: PromptDefinition<TInput, TOutput>,
+): PromptBackedNode<TArgs, TResult> {
+  return Object.assign(fn, {
+    promptTrace: toPromptTraceEntry(prompt),
+  });
+}
+
+export function readPromptTrace(node: unknown): PromptTraceEntry | null {
+  if (!node || typeof node !== "function") {
+    return null;
+  }
+
+  const promptTrace = (node as { promptTrace?: PromptTraceEntry }).promptTrace;
+  if (!promptTrace) {
+    return null;
+  }
+
+  return promptTrace;
+}
+
 function createDefaultTransport(): StructuredLlmTransport {
   return async function defaultTransport(request) {
     const response = await fetch(request.url, {
@@ -216,7 +290,7 @@ export function createOpenAiCompatibleStructuredLlmAdapter(
 
       const content = readMessageContent(parsedResponse.choices?.[0]?.message?.content);
       const structuredOutput = parseStructuredJson(content);
-      return request.prompt.outputSchema.parse(structuredOutput);
+      return parsePromptOutput(request.prompt, structuredOutput);
     },
   };
 }
@@ -226,33 +300,43 @@ export function createPromptBackedNodes(adapter: StructuredLlmAdapter): Pick<
   "discoveryParse" | "retrieveProcedure" | "draftOptOut" | "interpretResult"
 > {
   return {
-    async discoveryParse(input: ListingPromptInput): Promise<DiscoveryResult> {
+    discoveryParse: withPromptTrace(async function discoveryParse(input: ListingPromptInput): Promise<DiscoveryResult> {
       return adapter.generateStructured({
         prompt: listingClassifierPrompt,
         input,
       });
-    },
+    }, listingClassifierPrompt),
 
-    async retrieveProcedure(input: ProcedurePromptInput): Promise<RetrieveProcedureOutput> {
+    retrieveProcedure: withPromptTrace(async function retrieveProcedure(input: ProcedurePromptInput): Promise<RetrieveProcedureOutput> {
       return adapter.generateStructured({
         prompt: procedureSelectorPrompt,
         input,
       });
-    },
+    }, procedureSelectorPrompt),
 
-    async draftOptOut(input: DraftPromptInput): Promise<DraftOptOutOutput> {
+    draftOptOut: withPromptTrace(async function draftOptOut(input: DraftPromptInput, context: GraphContext): Promise<DraftOptOutOutput> {
       return adapter.generateStructured({
         prompt: draftGeneratorPrompt,
-        input,
+        input: {
+          ...input,
+          minimize_pii: context.policy.minimize_pii,
+        },
       });
-    },
+    }, draftGeneratorPrompt),
 
-    async interpretResult(input: PostExecutionPromptInput): Promise<InterpretResultOutput> {
+    interpretResult: withPromptTrace(async function interpretResult(input: PostExecutionPromptInput, context: GraphContext): Promise<InterpretResultOutput> {
       return adapter.generateStructured({
         prompt: postExecutionVerifierPrompt,
-        input,
+        input: {
+          ...input,
+          retry_count: input.retry_count,
+          max_submission_retries: context.policy.max_submission_retries,
+          pending_confirmation_strategy: context.policy.pending_confirmation_strategy,
+          captcha_failure_strategy: context.policy.captcha_failure_strategy,
+          manual_requirement_strategy: context.policy.manual_requirement_strategy,
+        },
       });
-    },
+    }, postExecutionVerifierPrompt),
   };
 }
 
@@ -281,7 +365,7 @@ export function createFixtureLlmAdapter(
       }
 
       const result = typeof fixture === "function" ? await fixture(input) : fixture;
-      return prompt.outputSchema.parse(result);
+      return parsePromptOutput(prompt, result);
     },
   };
 }

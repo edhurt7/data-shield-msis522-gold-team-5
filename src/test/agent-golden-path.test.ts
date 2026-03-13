@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { createAgentWorkflow } from "@/lib/agent";
 import { fastPeopleSearchFixture } from "@/lib/agent/fixtures/fastpeoplesearch";
 import { ambiguousFastPeopleSearchFixture } from "@/lib/agent/fixtures/fastpeoplesearch-negative";
+import { createFixtureBackedWorkflow } from "@/test/support/fixture-workflow";
 
 describe("artifact-backed one-site golden path", () => {
   it("runs FastPeopleSearch end-to-end using saved listing text and backend-shaped procedure retrieval", async () => {
-    const workflow = createAgentWorkflow();
+    const workflow = createFixtureBackedWorkflow();
 
     const result = await workflow.run({
       context: {
@@ -25,8 +25,7 @@ describe("artifact-backed one-site golden path", () => {
       request_text: fastPeopleSearchFixture.requestText,
       site_input: {
         site: fastPeopleSearchFixture.site,
-        page_text: fastPeopleSearchFixture.listingPageText,
-        page_url: fastPeopleSearchFixture.candidateUrl,
+        page_artifact: fastPeopleSearchFixture.pageArtifact,
         retrieved_chunks: [],
         execution_result: fastPeopleSearchFixture.executionResult,
       },
@@ -42,7 +41,14 @@ describe("artifact-backed one-site golden path", () => {
     });
     expect(result.match_decision?.evidence.length).toBeGreaterThan(0);
     expect(result.retrieve_procedure?.procedure_type).toBe(fastPeopleSearchFixture.expected.procedureType);
-    expect(result.retrieve_procedure?.source_chunks).toEqual(expect.arrayContaining(fastPeopleSearchFixture.procedureChunks));
+    expect(result.retrieve_procedure?.source_chunks).toEqual(expect.arrayContaining(
+      fastPeopleSearchFixture.procedureChunks.map((chunk) => expect.objectContaining({
+        ...chunk,
+        source_id: "fastpeoplesearch-procedure-v1",
+        source_updated_at: "2026-03-10T00:00:00.000Z",
+        retrieved_at: "2026-03-12T12:00:00.000Z",
+      })),
+    ));
     expect(result.draft_optout).toEqual({
       site: "FastPeopleSearch",
       candidate_url: fastPeopleSearchFixture.candidateUrl,
@@ -82,7 +88,7 @@ describe("artifact-backed one-site golden path", () => {
   });
 
   it("blocks drafting and planning on an ambiguous saved listing", async () => {
-    const workflow = createAgentWorkflow();
+    const workflow = createFixtureBackedWorkflow();
 
     const result = await workflow.run({
       context: {
@@ -101,8 +107,7 @@ describe("artifact-backed one-site golden path", () => {
       request_text: ambiguousFastPeopleSearchFixture.requestText,
       site_input: {
         site: ambiguousFastPeopleSearchFixture.site,
-        page_text: ambiguousFastPeopleSearchFixture.listingPageText,
-        page_url: ambiguousFastPeopleSearchFixture.candidateUrl,
+        page_artifact: ambiguousFastPeopleSearchFixture.pageArtifact,
         retrieved_chunks: [],
       },
     });

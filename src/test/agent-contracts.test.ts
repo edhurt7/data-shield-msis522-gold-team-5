@@ -7,7 +7,9 @@ import {
   defaultAgentPolicy,
   discoveryResultSchema,
   executionResultSchema,
+  pageContentArtifactSchema,
   phaseTransitions,
+  procedureSourceChunkSchema,
   procedureRetrievalSchema,
   procedureSelectionSchema,
   resolveAgentPolicy,
@@ -80,19 +82,40 @@ describe("agent contracts", () => {
   it("applies per-run policy overrides without mutating the shared defaults", () => {
     const resolved = resolveAgentPolicy({
       match_confidence_threshold: 0.6,
+      monitoring_cadence_days: 14,
+      re_review_cooldown_days: 7,
       minimize_pii: false,
       low_confidence_match_strategy: "allow_with_review",
     });
 
     expect(resolved).toMatchObject({
       match_confidence_threshold: 0.6,
+      monitoring_cadence_days: 14,
+      re_review_cooldown_days: 7,
       minimize_pii: false,
       low_confidence_match_strategy: "allow_with_review",
     });
     expect(defaultAgentPolicy).toMatchObject({
       match_confidence_threshold: 0.75,
+      monitoring_cadence_days: 30,
+      re_review_cooldown_days: 30,
+      re_review_listing_reappearance_threshold: 1,
       minimize_pii: true,
       low_confidence_match_strategy: "block",
+    });
+  });
+
+  it("accepts monitoring cadence and re-review threshold policy fields", () => {
+    const resolved = resolveAgentPolicy({
+      monitoring_cadence_days: 21,
+      re_review_cooldown_days: 10,
+      re_review_listing_reappearance_threshold: 2,
+    });
+
+    expect(resolved).toMatchObject({
+      monitoring_cadence_days: 21,
+      re_review_cooldown_days: 10,
+      re_review_listing_reappearance_threshold: 2,
     });
   });
 
@@ -158,6 +181,38 @@ describe("agent contracts", () => {
       ticket_ids: [],
       screenshot_ref: "s3://bucket/confirm.png",
       error_text: null,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("normalizes procedure chunks with source identity and freshness metadata", () => {
+    const result = procedureSourceChunkSchema.parse({
+      doc_id: "fps-1",
+      quote: "Use the removal form.",
+    });
+
+    expect(result).toEqual({
+      doc_id: "fps-1",
+      quote: "Use the removal form.",
+      source_id: "fps-1",
+      source_updated_at: null,
+      retrieved_at: null,
+    });
+  });
+
+  it("accepts the Playwright page-content artifact contract for discovery", () => {
+    const result = pageContentArtifactSchema.safeParse({
+      visible_text: "Jane Doe, age 35, Seattle, WA",
+      url: "https://example.com/listing/jane-doe",
+      screenshot_ref: "artifacts/jane-doe.png",
+      extracted_metadata: {
+        title: "Jane Doe in Seattle, WA",
+        canonical_url: "https://example.com/listing/jane-doe",
+        page_category: "listing_detail",
+        captured_at: "2026-03-13T12:00:00.000Z",
+        headings: ["Jane Doe", "Seattle, WA"],
+      },
     });
 
     expect(result.success).toBe(true);

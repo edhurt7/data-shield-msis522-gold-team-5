@@ -1,45 +1,53 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 import { useAuth } from "@/lib/auth-context";
 import { US_STATES } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShieldLogo } from "@/components/ShieldLogo";
-import { Shield, ArrowRight, Info } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Shield, ArrowRight, CalendarIcon, Info } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function OnboardingPage() {
   const { completeOnboarding } = useAuth();
   const navigate = useNavigate();
+  const currentYear = new Date().getFullYear();
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [identifierType, setIdentifierType] = useState<"state" | "dob">("state");
   const [state, setState] = useState("");
   const [dob, setDob] = useState("");
+  const [dobPickerOpen, setDobPickerOpen] = useState(false);
   const [consent, setConsent] = useState(false);
 
   const isValid =
     firstName.trim() &&
     lastName.trim() &&
     consent &&
-    (identifierType === "state" ? state : dob);
+    state;
 
   const handleSubmit = () => {
     if (!isValid) return;
+    const identifierType = dob ? "dob" : "state";
+
     completeOnboarding({
       firstName,
       lastName,
       identifierType,
-      state: identifierType === "state" ? state : undefined,
-      dob: identifierType === "dob" ? dob : undefined,
+      state,
+      dob: dob || undefined,
     });
     navigate("/dashboard");
   };
+
+  const selectedDob = dob ? new Date(`${dob}T00:00:00`) : undefined;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -71,14 +79,11 @@ export default function OnboardingPage() {
             </div>
           </div>
 
-          <Tabs value={identifierType} onValueChange={(v) => setIdentifierType(v as "state" | "dob")}>
-            <TabsList className="w-full">
-              <TabsTrigger value="state" className="flex-1">Current State</TabsTrigger>
-              <TabsTrigger value="dob" className="flex-1">Date of Birth</TabsTrigger>
-            </TabsList>
-            <TabsContent value="state" className="mt-3">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="state">Current State</Label>
               <Select value={state} onValueChange={setState}>
-                <SelectTrigger>
+                <SelectTrigger id="state">
                   <SelectValue placeholder="Select your state" />
                 </SelectTrigger>
                 <SelectContent>
@@ -87,11 +92,44 @@ export default function OnboardingPage() {
                   ))}
                 </SelectContent>
               </Select>
-            </TabsContent>
-            <TabsContent value="dob" className="mt-3">
-              <Input type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
-            </TabsContent>
-          </Tabs>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="dob">Date of Birth (Optional)</Label>
+              <Popover open={dobPickerOpen} onOpenChange={setDobPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="dob"
+                    type="button"
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-between font-normal",
+                      !selectedDob && "text-muted-foreground",
+                    )}
+                  >
+                    {selectedDob ? format(selectedDob, "MMMM d, yyyy") : "Pick your birth date"}
+                    <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDob}
+                    onSelect={(date) => {
+                      setDob(date ? format(date, "yyyy-MM-dd") : "");
+                      if (date) setDobPickerOpen(false);
+                    }}
+                    defaultMonth={selectedDob}
+                    captionLayout="dropdown"
+                    fromYear={1900}
+                    toYear={currentYear}
+                    disabled={{ after: new Date() }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
 
           <div className="flex items-start gap-2 rounded-md bg-muted/50 p-3">
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />

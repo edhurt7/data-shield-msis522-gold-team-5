@@ -1,7 +1,8 @@
 import { ZodError } from "zod";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
+  agentApiPaths,
   createBackendProcedureRetriever,
   createDefaultProcedureRetriever,
   createStaticProcedureRetrievalBackendClient,
@@ -70,8 +71,20 @@ describe("procedure retrieval integration", () => {
               updated_at: "2026-03-10T00:00:00.000Z",
               channel_hint: "webform",
               source_chunks: [
-                { doc_id: "fps-live-1", quote: "Use the FastPeopleSearch removal webform." },
-                { doc_id: "fps-live-2", quote: "Required fields: full name and privacy email." },
+                {
+                  doc_id: "fps-live-1",
+                  quote: "Use the FastPeopleSearch removal webform.",
+                  source_id: "fps-webform-v2",
+                  source_updated_at: "2026-03-10T00:00:00.000Z",
+                  retrieved_at: "2026-03-12T12:00:00.000Z",
+                },
+                {
+                  doc_id: "fps-live-2",
+                  quote: "Required fields: full name and privacy email.",
+                  source_id: "fps-webform-v2",
+                  source_updated_at: "2026-03-10T00:00:00.000Z",
+                  retrieved_at: "2026-03-12T12:00:00.000Z",
+                },
               ],
             },
           ],
@@ -84,8 +97,20 @@ describe("procedure retrieval integration", () => {
 
     expect(result.status).toBe("found");
     expect(result.chunks).toEqual([
-      { doc_id: "fps-live-1", quote: "Use the FastPeopleSearch removal webform." },
-      { doc_id: "fps-live-2", quote: "Required fields: full name and privacy email." },
+      {
+        doc_id: "fps-live-1",
+        quote: "Use the FastPeopleSearch removal webform.",
+        source_id: "fps-webform-v2",
+        source_updated_at: "2026-03-10T00:00:00.000Z",
+        retrieved_at: "2026-03-12T12:00:00.000Z",
+      },
+      {
+        doc_id: "fps-live-2",
+        quote: "Required fields: full name and privacy email.",
+        source_id: "fps-webform-v2",
+        source_updated_at: "2026-03-10T00:00:00.000Z",
+        retrieved_at: "2026-03-12T12:00:00.000Z",
+      },
     ]);
     expect(result.notes).toContain("fps-webform-v2");
   });
@@ -121,7 +146,13 @@ describe("procedure retrieval integration", () => {
               site: "FastPeopleSearch",
               updated_at: "2025-01-01T00:00:00.000Z",
               channel_hint: "webform",
-              source_chunks: [{ doc_id: "fps-old-1", quote: "Old webform procedure." }],
+              source_chunks: [{
+                doc_id: "fps-old-1",
+                quote: "Old webform procedure.",
+                source_id: "fps-old",
+                source_updated_at: "2025-01-01T00:00:00.000Z",
+                retrieved_at: "2026-03-12T12:00:00.000Z",
+              }],
             },
           ],
         },
@@ -148,14 +179,26 @@ describe("procedure retrieval integration", () => {
               site: "FastPeopleSearch",
               updated_at: "2026-03-01T00:00:00.000Z",
               channel_hint: "email",
-              source_chunks: [{ doc_id: "fps-email-1", quote: "Email privacy@site.test." }],
+              source_chunks: [{
+                doc_id: "fps-email-1",
+                quote: "Email privacy@site.test.",
+                source_id: "fps-email",
+                source_updated_at: "2026-03-01T00:00:00.000Z",
+                retrieved_at: "2026-03-12T12:00:00.000Z",
+              }],
             },
             {
               procedure_id: "fps-webform",
               site: "FastPeopleSearch",
               updated_at: "2026-03-02T00:00:00.000Z",
               channel_hint: "webform",
-              source_chunks: [{ doc_id: "fps-webform-1", quote: "Use the webform only." }],
+              source_chunks: [{
+                doc_id: "fps-webform-1",
+                quote: "Use the webform only.",
+                source_id: "fps-webform",
+                source_updated_at: "2026-03-02T00:00:00.000Z",
+                retrieved_at: "2026-03-12T12:00:00.000Z",
+              }],
             },
           ],
         },
@@ -193,7 +236,31 @@ describe("procedure retrieval integration", () => {
   });
 
   it("prefers provided chunks over backend results", async () => {
-    const retriever = createDefaultProcedureRetriever();
+    const fetchFn = vi.fn().mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve(JSON.stringify({
+        site: "FastPeopleSearch",
+        retrieved_at: "2026-03-12T12:00:00.000Z",
+        procedures: [
+          {
+            procedure_id: "fps-webform-v2",
+            site: "FastPeopleSearch",
+            updated_at: "2026-03-10T00:00:00.000Z",
+            channel_hint: "webform",
+            source_chunks: [
+              {
+                doc_id: "fps-live-1",
+                quote: "Use the FastPeopleSearch removal webform.",
+                source_id: "fps-webform-v2",
+                source_updated_at: "2026-03-10T00:00:00.000Z",
+                retrieved_at: "2026-03-12T12:00:00.000Z",
+              },
+            ],
+          },
+        ],
+      })),
+    });
+    const retriever = createDefaultProcedureRetriever({ fetchFn: fetchFn as typeof fetch });
 
     const result = await retriever(
       {
@@ -204,7 +271,57 @@ describe("procedure retrieval integration", () => {
     );
 
     expect(result.status).toBe("found");
-    expect(result.chunks).toEqual([{ doc_id: "fps-live-1", quote: "Use the webform and enter full name and email." }]);
+    expect(result.chunks).toEqual([{
+      doc_id: "fps-live-1",
+      quote: "Use the webform and enter full name and email.",
+      source_id: "fps-live-1",
+      source_updated_at: null,
+      retrieved_at: null,
+    }]);
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+
+  it("uses the agent retrieval API for default backend lookups", async () => {
+    const fetchFn = vi.fn().mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve(JSON.stringify({
+        site: "FastPeopleSearch",
+        retrieved_at: "2026-03-12T12:00:00.000Z",
+        procedures: [
+          {
+            procedure_id: "fps-webform-v2",
+            site: "FastPeopleSearch",
+            updated_at: "2026-03-10T00:00:00.000Z",
+            channel_hint: "webform",
+            source_chunks: [
+              {
+                doc_id: "fps-live-1",
+                quote: "Use the FastPeopleSearch removal webform.",
+                source_id: "fps-webform-v2",
+                source_updated_at: "2026-03-10T00:00:00.000Z",
+                retrieved_at: "2026-03-12T12:00:00.000Z",
+              },
+            ],
+          },
+        ],
+      })),
+    });
+    const retriever = createDefaultProcedureRetriever({ baseUrl: "https://example.test", fetchFn: fetchFn as typeof fetch });
+
+    const result = await retriever(input, context);
+
+    expect(result.status).toBe("found");
+    expect(result.chunks).toEqual([{
+      doc_id: "fps-live-1",
+      quote: "Use the FastPeopleSearch removal webform.",
+      source_id: "fps-webform-v2",
+      source_updated_at: "2026-03-10T00:00:00.000Z",
+      retrieved_at: "2026-03-12T12:00:00.000Z",
+    }]);
+    expect(fetchFn).toHaveBeenCalledWith(
+      `https://example.test${agentApiPaths.retrieveProcedures}`,
+      expect.objectContaining({ method: "POST" }),
+    );
   });
 
   it("maps contradictory retrieval to an explicit review reason", () => {

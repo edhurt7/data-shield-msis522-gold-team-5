@@ -6,6 +6,8 @@ import {
   defaultAgentPolicy,
   discoveryResultSchema,
   executionResultSchema,
+  pageContentArtifactSchema,
+  procedureSourceChunkSchema,
   procedureRetrievalSchema,
   resolveAgentPolicy,
   reviewReasonSchema,
@@ -21,6 +23,42 @@ export const agentNodeNameSchema = z.enum([
   "draft_optout",
   "plan_submission",
   "interpret_result",
+]);
+
+export const agentGraphEdgeSchema = z.object({
+  from: agentNodeNameSchema,
+  to: agentNodeNameSchema,
+});
+
+export const agentGraphTopologySchema = z.tuple([
+  z.object({
+    from: z.literal("validate_consent"),
+    to: z.literal("discovery_parse"),
+  }),
+  z.object({
+    from: z.literal("discovery_parse"),
+    to: z.literal("retrieve_procedure"),
+  }),
+  z.object({
+    from: z.literal("retrieve_procedure"),
+    to: z.literal("draft_optout"),
+  }),
+  z.object({
+    from: z.literal("draft_optout"),
+    to: z.literal("plan_submission"),
+  }),
+  z.object({
+    from: z.literal("plan_submission"),
+    to: z.literal("interpret_result"),
+  }),
+]);
+
+export const agentGraphTopology = agentGraphTopologySchema.parse([
+  { from: "validate_consent", to: "discovery_parse" },
+  { from: "discovery_parse", to: "retrieve_procedure" },
+  { from: "retrieve_procedure", to: "draft_optout" },
+  { from: "draft_optout", to: "plan_submission" },
+  { from: "plan_submission", to: "interpret_result" },
 ]);
 
 export const graphContextSchema = z.object({
@@ -60,8 +98,7 @@ export const validateConsentOutputSchema = z.object({
 export const discoveryParseInputSchema = z.object({
   seed_profile: seedProfileSchema,
   site: z.string().min(1),
-  page_text: z.string().min(1),
-  page_url: z.string().url().optional(),
+  page_artifact: pageContentArtifactSchema,
 });
 
 export const discoveryParseOutputSchema = discoveryResultSchema;
@@ -70,10 +107,7 @@ export const retrieveProcedureInputSchema = z.object({
   seed_profile: seedProfileSchema,
   discovery_result: discoveryResultSchema,
   site: z.string().min(1),
-  retrieved_chunks: z.array(z.object({
-    doc_id: z.string().min(1),
-    quote: z.string().min(1),
-  })).default([]),
+  retrieved_chunks: z.array(procedureSourceChunkSchema).default([]),
 });
 
 export const retrieveProcedureOutputSchema = procedureRetrievalSchema;
@@ -113,6 +147,8 @@ export const interpretResultOutputSchema = z.object({
 });
 
 export type AgentNodeName = z.infer<typeof agentNodeNameSchema>;
+export type AgentGraphEdge = z.infer<typeof agentGraphEdgeSchema>;
+export type AgentGraphTopology = z.infer<typeof agentGraphTopologySchema>;
 export type GraphContext = z.infer<typeof graphContextSchema>;
 export type ValidateConsentInput = z.infer<typeof validateConsentInputSchema>;
 export type ValidateConsentOutput = z.infer<typeof validateConsentOutputSchema>;

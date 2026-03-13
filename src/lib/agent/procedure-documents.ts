@@ -46,6 +46,38 @@ export const builtInProcedureDocuments: ProcedureDocument[] = [
     ],
   },
   {
+    id: "whitepages-procedure-v1",
+    site: "WhitePages",
+    updated_at: "2026-03-05T00:00:00.000Z",
+    channel_hint: "webform",
+    chunks: [
+      {
+        doc_id: "whitepages-proc-1",
+        quote: "Open the WhitePages suppression request form and paste the matching listing URL.",
+      },
+      {
+        doc_id: "whitepages-proc-2",
+        quote: "Provide the privacy email address, confirm the request checkbox, and complete the email verification step if prompted.",
+      },
+    ],
+  },
+  {
+    id: "truepeoplesearch-procedure-v1",
+    site: "TruePeopleSearch",
+    updated_at: "2026-03-05T00:00:00.000Z",
+    channel_hint: "webform",
+    chunks: [
+      {
+        doc_id: "truepeoplesearch-proc-1",
+        quote: "Use the TruePeopleSearch removal page to search for the matching profile by full name and city/state.",
+      },
+      {
+        doc_id: "truepeoplesearch-proc-2",
+        quote: "Select the matching record, enter the privacy email address, and complete the email confirmation flow if prompted.",
+      },
+    ],
+  },
+  {
     id: "radaris-procedure-v1",
     site: "Radaris",
     updated_at: "2026-02-22T00:00:00.000Z",

@@ -26,14 +26,14 @@ export function ScanTable({ sites, onSelectSite }: ScanTableProps) {
               key={site.id}
               className={cn(
                 "transition-colors",
-                site.status === "found" && "cursor-pointer hover:bg-accent/50"
+                site.foundData && "cursor-pointer hover:bg-accent/50"
               )}
-              onClick={() => site.status === "found" && onSelectSite(site)}
-              role={site.status === "found" ? "button" : undefined}
-              tabIndex={site.status === "found" ? 0 : undefined}
-              aria-label={site.status === "found" ? `View details for ${site.name}` : undefined}
+              onClick={() => site.foundData && onSelectSite(site)}
+              role={site.foundData ? "button" : undefined}
+              tabIndex={site.foundData ? 0 : undefined}
+              aria-label={site.foundData ? `View details for ${site.name}` : undefined}
               onKeyDown={(e) => {
-                if (site.status === "found" && (e.key === "Enter" || e.key === " ")) {
+                if (site.foundData && (e.key === "Enter" || e.key === " ")) {
                   e.preventDefault();
                   onSelectSite(site);
                 }
@@ -45,9 +45,21 @@ export function ScanTable({ sites, onSelectSite }: ScanTableProps) {
                   {site.url}
                   <ExternalLink className="h-3 w-3" aria-hidden="true" />
                 </span>
+                {site.demoMetadata?.outcomeLabel ? (
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {site.demoMetadata.outcomeLabel}
+                  </div>
+                ) : null}
               </TableCell>
               <TableCell>
-                <ScanStatusBadge status={site.status} />
+                <div className="space-y-1">
+                  <ScanStatusBadge status={site.status} />
+                  {site.demoMetadata?.outcomeLabel ? (
+                    <div className="text-xs text-muted-foreground sm:hidden">
+                      {site.demoMetadata.outcomeLabel}
+                    </div>
+                  ) : null}
+                </div>
               </TableCell>
             </TableRow>
           ))}

@@ -293,6 +293,26 @@ Verification:
 
 - `npm test` passed with 13 test files and 52 total tests
 
+### Update 12
+
+Locked the current fixture-backed agent paths into an explicit baseline regression suite.
+
+Completed:
+
+- Added `src/test/support/fixture-workflow.ts` to centralize the fixture-backed workflow runner and mocked retrieval backend
+- Updated `src/test/agent-golden-path.test.ts` and `src/test/agent-eval.test.ts` to use the shared fixture runner
+- Added `src/test/agent-baseline-regression.test.ts` covering the current saved-fixture baselines for:
+  - FastPeopleSearch happy path
+  - ambiguous low-confidence block
+  - incomplete-procedure no-grounding fallback
+  - Radaris email draft quality
+  - unclear execution evidence fail-closed behavior
+
+Result:
+
+- The repo now has an explicit baseline regression suite for the current fixture-backed behavior instead of relying on that baseline only implicitly across broader tests
+- Future workflow or prompt changes can be evaluated against a stable saved-fixture contract before expanding to new sites or live integrations
+
 ## Remaining Work For Eddie
 
 ### Highest Priority
@@ -341,6 +361,261 @@ Verification:
 - Integrate real automation results
   - connect execution-result interpretation to Playwright outputs
   - consume confirmation text, ticket IDs, screenshots, and error states from actual automation
+
+## 2026-03-13
+
+### Update 13
+
+Defined the week-1 web automation execution boundary for future Playwright integration.
+
+Completed:
+
+- Added `src/lib/automation/types.ts` with internal automation-only types for:
+  - site executors
+  - evidence bundles
+  - artifacts
+  - step outcomes
+- Added `src/lib/automation/runner.ts` with a typed `executeAutomation(handoff)` entry point
+- Added `src/lib/automation/errors.ts` with known execution failure classes:
+  - `captcha`
+  - `rate_limited`
+  - `selector_missing`
+  - `site_changed`
+  - `manual_review_required`
+- Added `src/lib/automation/site-registry.ts` with a registry seam for site-specific executors
+- Added `src/lib/automation/sites/fastpeoplesearch.ts` as the first placeholder site executor
+- Added `src/lib/automation/artifacts.ts` for execution evidence and artifact helpers
+- Added tests:
+  - `src/test/automation-runner.test.ts`
+  - `src/test/automation-fastpeoplesearch.test.ts`
+- Added `docs/web-automation-role.md`
+
+Result:
+
+- The repo now has a clean execution-layer boundary that accepts the existing `ActionHandoff` contract and returns a contract-safe `ExecutionResult` plus structured internal evidence
+- The runner fails closed before execution when approval or review gates are still open
+- Site-specific browser logic is now isolated behind a registry-driven executor seam instead of being coupled directly to the workflow
+
+Verification:
+
+- Pending local test run after adding the new automation module and tests
+
+### Update 14
+
+Built the reusable week-2 Playwright execution engine for simple contract-driven form steps.
+
+Completed:
+
+- Installed Playwright packages and added:
+  - `playwright` dev dependency
+  - `@playwright/test` dev dependency
+  - `playwright.config.ts`
+  - `playwright:install` script for Chromium setup
+- Reworked `src/lib/automation/runner.ts` into a generic browser runner that:
+  - launches a Playwright browser by default
+  - executes `navigate`, `fill`, `select`, `click`, and `wait` steps
+  - treats `submit` as a click-style action when a selector is present
+  - enforces per-step timeout and retry behavior
+  - captures screenshot, HTML, and page-text artifacts on terminal step failure
+  - emits structured JSON step logs as automation artifacts
+- Expanded `src/lib/automation/artifacts.ts` with page capture helpers for:
+  - screenshot
+  - HTML snapshot
+  - visible page text
+  - step-log artifact generation
+- Replaced `src/test/automation-runner.test.ts` with generic-runner coverage for:
+  - approval short-circuiting
+  - successful step execution
+  - retry recovery
+  - failure artifact capture
+
+Result:
+
+- The automation layer now has a reusable browser execution core instead of only a site-registry wrapper
+- Simple contract-driven webform flows can execute end-to-end without site-specific code when selectors and field bindings are present in the handoff
+- Failures now return richer execution evidence for debugging and auditability
+
+Verification:
+
+- `npm test` passed with 16 test files and 118 total tests
+- Real browser execution still requires `npm run playwright:install` to download Chromium locally
+
+### Update 15
+
+Added the first broker-specific adapter on top of the generic Playwright engine: FastPeopleSearch.
+
+Completed:
+
+- Reworked `src/lib/automation/site-registry.ts` so the default registry now includes FastPeopleSearch again
+- Replaced the placeholder `src/lib/automation/sites/fastpeoplesearch.ts` executor with a real site adapter that:
+  - rewrites the incoming handoff into a FastPeopleSearch-specific step plan
+  - encodes the entry URL and selectors for the removal flow
+  - validates required fields before execution
+  - reuses the generic runner through the execution context
+  - detects expected confirmation text
+  - escalates to manual review on unsupported channels, CAPTCHA/block text, or missing confirmation language
+- Replaced `src/test/automation-fastpeoplesearch.test.ts` with adapter-level coverage for:
+  - registry wiring
+  - site-specific selectors and entry URL
+  - confirmation detection
+  - manual-review fallback behavior
+
+Result:
+
+- FastPeopleSearch is now the first registered site adapter layered on top of the reusable browser runner instead of a standalone placeholder
+- The generic runner remains the shared execution engine, while the site adapter owns site-specific navigation details and confirmation logic
+
+Verification:
+
+- `npm test` passed with 16 test files and 120 total tests
+
+### Update 16
+
+Hardened the automation layer to fail closed under real-world browser failures instead of returning optimistic success.
+
+Completed:
+
+- Expanded `src/lib/automation/errors.ts` with an explicit timeout failure class
+- Tightened `src/lib/automation/runner.ts` to:
+  - classify raw browser errors into CAPTCHA, rate-limit, selector-missing, site-changed, timeout, or manual-review paths
+  - capture page text into `confirmation_text` on failure when available
+  - capture a success screenshot and attach it to `screenshot_ref`
+  - schema-validate terminal `ExecutionResult` objects before returning them
+- Updated the FastPeopleSearch adapter to preserve generic-runner evidence when:
+  - CAPTCHA is detected
+  - blocked/rate-limited pages are detected
+  - expected confirmation text is missing
+- Expanded tests for:
+  - CAPTCHA
+  - missing selectors
+  - timeout
+  - confirmation page not found
+
+Result:
+
+- The automation layer now fails closed with evidence instead of discarding browser context when site conditions degrade
+- Success and failure paths both preserve screenshot and page-text evidence
+- Returned automation results are validated against the shared `executionResultSchema`
+
+Verification:
+
+- `npm test` passed with 16 test files and 124 total tests
+
+### Update 17
+
+Integrated the automation layer into the existing agent workflow seam.
+
+Completed:
+
+- Re-exported automation modules through `src/lib/agent/index.ts`
+- Extended `src/lib/agent/workflow.ts` with:
+  - a workflow-side automation record schema
+  - `automation_record` on workflow site outputs
+  - a workflow handoff builder that converts the current planning output into an `ActionHandoff` for supported sites
+  - `runWithAutomation(...)`, which:
+    - runs the existing workflow through retrieval/draft/planning
+    - executes automation from the generated handoff
+    - feeds the returned `ExecutionResult` back through workflow interpretation
+    - returns the structured automation record alongside the interpreted workflow output
+- Added `src/test/agent-workflow-automation.test.ts` covering:
+  - retrieval
+  - draft generation
+  - handoff creation
+  - automation execution
+  - result interpretation
+
+Result:
+
+- The repo now has a working end-to-end path from workflow planning to automation execution to interpreted execution outcome
+- Automation evidence is carried back into the workflow output rather than being lost at the execution boundary
+
+Verification:
+
+- `npm test` passed with 17 test files and 125 total tests
+
+### Update 18
+
+Hardened the automation layer for team handoff and future broker expansion.
+
+Completed:
+
+- Added `src/lib/automation/sites/site-adapter.template.ts` as a starting point for new broker adapters
+- Expanded `src/lib/automation/site-registry.ts` with:
+  - support-status metadata
+  - verification dates
+  - known issues
+  - a default support matrix the docs and backend can reference
+- Updated `docs/web-automation-role.md` with:
+  - a support matrix covering `supported`, `partial`, `manual_only`, and `blocked`
+  - backend persistence guidance for:
+    - status
+    - confirmation text
+    - screenshot ref
+    - error text
+    - ticket IDs
+  - onboarding notes for adding new site adapters
+
+Result:
+
+- The automation layer is now documented as a maintainable subsystem rather than a one-off implementation for a single site
+- New adapters have a clear starting point, and backend persistence expectations are explicit for future FastAPI/storage work
+
+Verification:
+
+- Documentation and registry updates only; no runtime behavior changed
+
+### Update 19
+
+Closed the remaining definition-of-done gaps for the web automation role.
+
+Completed:
+
+- Added automation-level failure metadata:
+  - `failureCode`
+  - structured `reviewReasons`
+- Propagated that metadata through the automation record returned to the workflow
+- Added an explicit `site_changed` regression test
+- Added a real Playwright smoke script:
+  - `npm run playwright:smoke`
+- Installed Chromium locally and verified a real browser launch
+
+Result:
+
+- Automation failures now produce both evidence artifacts and structured failure metadata instead of relying only on downstream interpretation
+- Playwright is no longer only dependency-installed; it has a verified runnable browser path in this workspace
+
+Verification:
+
+- `npm run playwright:install` passed
+- `npm run playwright:smoke` passed
+- `npm test` passed with 17 test files and 126 total tests
+
+### Update 20
+
+Closed the remaining maintainability items surfaced by the definition-of-done review.
+
+Completed:
+
+- Extracted workflow handoff construction into `src/lib/automation/handoff.ts`
+- Replaced the workflow-local handoff builder with the shared automation mapping module
+- Added typed support-matrix helpers in `src/lib/automation/site-registry.ts` for:
+  - full matrix reads
+  - per-site lookup
+  - runnable/non-runnable gating
+- Performed a live FastPeopleSearch verification check with Playwright on `2026-03-13`
+- Updated support metadata and docs to reflect the real live-verification result:
+  - FastPeopleSearch is currently `partial`, not fully `supported`, in this environment
+
+Result:
+
+- Workflow orchestration no longer owns automation handoff-shaping logic directly
+- Support-matrix metadata is now reusable by backend scheduling or UI gating code
+- Live verification status is explicit and consistent across code and docs instead of being implied
+
+Verification:
+
+- `npm run playwright:smoke` passed
+- `npm test` passed with 18 test files and 128 total tests
 
 - Coordinate backend storage and endpoint implementation
   - map current schemas to FastAPI endpoints and persistence models

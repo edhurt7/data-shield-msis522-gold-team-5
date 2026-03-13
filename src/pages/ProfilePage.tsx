@@ -22,7 +22,6 @@ export default function ProfilePage() {
         <p className="text-sm text-muted-foreground">Manage your account and privacy settings</p>
       </div>
 
-      {/* Proxy Email */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -53,7 +52,6 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      {/* Personal Info */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -84,7 +82,6 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      {/* Actions */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Actions</CardTitle>

@@ -1,0 +1,1705 @@
+{
+  "startedAt": "2026-03-13T08:58:07.196Z",
+  "completedAt": "2026-03-13T08:58:38.174Z",
+  "summary": {
+    "browserMode": "fixture_confirmation",
+    "usedFixtureBrowser": true,
+    "site": "FastPeopleSearch",
+    "runId": "run_fps_milestone_fixture_confirmation_1773392287204",
+    "procedureType": "webform",
+    "draftChannel": "webform",
+    "handoffMode": "auto",
+    "automationStatus": "pending",
+    "manualReviewRequired": false,
+    "terminalPath": "await_confirmation",
+    "interpretResult": {
+      "next_status": "pending",
+      "next_action": "await_confirmation",
+      "review_reasons": []
+    },
+    "promptTrace": {
+      "discovery_parse": {
+        "prompt_name": "listing_classifier_extractor",
+        "prompt_version": "2026-03-13.2"
+      },
+      "retrieve_procedure": {
+        "prompt_name": "procedure_selector",
+        "prompt_version": "2026-03-13.2"
+      },
+      "draft_optout": {
+        "prompt_name": "draft_generator",
+        "prompt_version": "2026-03-13.2"
+      },
+      "interpret_result": {
+        "prompt_name": "post_execution_verifier",
+        "prompt_version": "2026-03-13.3"
+      }
+    }
+  },
+  "output": {
+    "site_input": {
+      "site": "FastPeopleSearch",
+      "page_artifact": {
+        "visible_text": "Jane Doe, Age 35\r\nSeattle, Washington\r\nCurrent Address: 123 Pine St Seattle WA\r\nPrevious City: Tacoma WA\r\nPhone: 206-555-0114\r\nRelatives: John Doe, Mary Doe",
+        "url": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+        "screenshot_ref": "fixtures/fastpeoplesearch-listing.png",
+        "extracted_metadata": {
+          "title": "Jane Doe in Seattle, WA | FastPeopleSearch",
+          "page_category": "listing_detail",
+          "headings": []
+        }
+      },
+      "retrieved_chunks": [
+        {
+          "doc_id": "fps-proc-1",
+          "quote": "Use the FastPeopleSearch removal webform to request record suppression.",
+          "source_id": "fps-proc-1",
+          "source_updated_at": null,
+          "retrieved_at": null
+        },
+        {
+          "doc_id": "fps-proc-2",
+          "quote": "Required fields: full name and privacy email. Check the consent checkbox before form submission.",
+          "source_id": "fps-proc-2",
+          "source_updated_at": null,
+          "retrieved_at": null
+        }
+      ],
+      "execution_result": {
+        "site": "FastPeopleSearch",
+        "candidate_url": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+        "status": "pending",
+        "manual_review_required": false,
+        "confirmation_text": "Your removal request has been received and is pending review.",
+        "ticket_ids": [],
+        "screenshot_ref": "automation/fastpeoplesearch/fastpeoplesearch-run-fps-milestone-fixture-confirmation-1773392287204-handoff/success-screenshot",
+        "error_text": null
+      },
+      "retry_count": 0
+    },
+    "context": {
+      "run_id": "run_fps_milestone_fixture_confirmation_1773392287204",
+      "policy_defaults": {
+        "match_confidence_threshold": 0.75,
+        "max_submission_retries": 1,
+        "monitoring_cadence_days": 30,
+        "re_review_cooldown_days": 30,
+        "re_review_listing_reappearance_threshold": 1,
+        "require_explicit_consent": true,
+        "minimize_pii": true,
+        "require_retrieval_grounding": true,
+        "low_confidence_match_strategy": "block",
+        "stale_procedure_strategy": "block",
+        "contradictory_procedure_strategy": "block",
+        "pending_confirmation_strategy": "await_confirmation",
+        "captcha_failure_strategy": "request_user_review",
+        "manual_requirement_strategy": "request_user_review"
+      },
+      "policy_overrides": {
+        "match_confidence_threshold": 0.75,
+        "max_submission_retries": 1,
+        "monitoring_cadence_days": 30,
+        "re_review_cooldown_days": 30,
+        "re_review_listing_reappearance_threshold": 1,
+        "require_explicit_consent": true,
+        "minimize_pii": true,
+        "require_retrieval_grounding": true,
+        "low_confidence_match_strategy": "block",
+        "stale_procedure_strategy": "block",
+        "contradictory_procedure_strategy": "block",
+        "pending_confirmation_strategy": "await_confirmation",
+        "captcha_failure_strategy": "request_user_review",
+        "manual_requirement_strategy": "request_user_review"
+      },
+      "policy": {
+        "match_confidence_threshold": 0.75,
+        "max_submission_retries": 1,
+        "monitoring_cadence_days": 30,
+        "re_review_cooldown_days": 30,
+        "re_review_listing_reappearance_threshold": 1,
+        "require_explicit_consent": true,
+        "minimize_pii": true,
+        "require_retrieval_grounding": true,
+        "low_confidence_match_strategy": "block",
+        "stale_procedure_strategy": "block",
+        "contradictory_procedure_strategy": "block",
+        "pending_confirmation_strategy": "await_confirmation",
+        "captcha_failure_strategy": "request_user_review",
+        "manual_requirement_strategy": "request_user_review"
+      },
+      "review_reasons": [],
+      "events": [
+        {
+          "eventId": "evt_fastpeoplesearch_intake_7",
+          "runId": "run_fps_milestone_fixture_confirmation_1773392287204",
+          "phase": "intake",
+          "status": "completed",
+          "message": "Consent validated for FastPeopleSearch.",
+          "createdAt": "2026-03-13T08:58:18.667Z",
+          "siteId": "fastpeoplesearch",
+          "reviewReasons": []
+        },
+        {
+          "eventId": "evt_fastpeoplesearch_match_8",
+          "runId": "run_fps_milestone_fixture_confirmation_1773392287204",
+          "phase": "match",
+          "status": "completed",
+          "message": "Discovery produced 1 candidate(s) for FastPeopleSearch.",
+          "createdAt": "2024-06-01T00:00:00.000Z",
+          "siteId": "fastpeoplesearch",
+          "candidateId": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+          "reviewReasons": []
+        },
+        {
+          "eventId": "evt_fastpeoplesearch_retrieve_procedure_9",
+          "runId": "run_fps_milestone_fixture_confirmation_1773392287204",
+          "phase": "retrieve_procedure",
+          "status": "completed",
+          "message": "Procedure resolution found for FastPeopleSearch; selected webform.",
+          "createdAt": "2026-03-13T08:58:33.309Z",
+          "siteId": "fastpeoplesearch",
+          "candidateId": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+          "reviewReasons": []
+        },
+        {
+          "eventId": "evt_fastpeoplesearch_draft_10",
+          "runId": "run_fps_milestone_fixture_confirmation_1773392287204",
+          "phase": "draft",
+          "status": "completed",
+          "message": "Drafted webform submission payload for FastPeopleSearch.",
+          "createdAt": "2026-03-13T08:58:37.071Z",
+          "siteId": "fastpeoplesearch",
+          "candidateId": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+          "reviewReasons": []
+        },
+        {
+          "eventId": "evt_fastpeoplesearch_approval_11",
+          "runId": "run_fps_milestone_fixture_confirmation_1773392287204",
+          "phase": "approval",
+          "status": "completed",
+          "message": "Submission plan accepted for FastPeopleSearch.",
+          "createdAt": "2026-03-13T08:58:37.073Z",
+          "siteId": "fastpeoplesearch",
+          "candidateId": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+          "reviewReasons": []
+        },
+        {
+          "eventId": "evt_fastpeoplesearch_verification_12",
+          "runId": "run_fps_milestone_fixture_confirmation_1773392287204",
+          "phase": "verification",
+          "status": "awaiting_user",
+          "message": "Execution result interpreted for FastPeopleSearch: status=pending, action=await_confirmation.",
+          "createdAt": "2026-03-13T08:58:38.154Z",
+          "siteId": "fastpeoplesearch",
+          "candidateId": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+          "reviewReasons": []
+        },
+        {
+          "eventId": "evt_fastpeoplesearch_verification_13",
+          "runId": "run_fps_milestone_fixture_confirmation_1773392287204",
+          "phase": "verification",
+          "status": "awaiting_user",
+          "message": "Submission pending confirmation for FastPeopleSearch.",
+          "createdAt": "2026-03-13T08:58:38.161Z",
+          "siteId": "fastpeoplesearch",
+          "candidateId": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+          "reviewReasons": []
+        }
+      ]
+    },
+    "validate_consent": {
+      "seed_profile": {
+        "full_name": "Jane Doe",
+        "name_variants": [
+          "Jane A Doe",
+          "J. Doe"
+        ],
+        "location": {
+          "city": "Seattle",
+          "state": "Washington"
+        },
+        "approx_age": "35",
+        "privacy_email": "shield-abc123@detraceme.io",
+        "optional": {
+          "phone_last4": "0114",
+          "prior_cities": [
+            "Tacoma"
+          ]
+        },
+        "consent": true
+      },
+      "normalized_query": "Jane Doe Seattle Washington",
+      "approved_for_submission": true
+    },
+    "discovery_parse": {
+      "site": "FastPeopleSearch",
+      "scan_timestamp": "2024-06-01T00:00:00.000Z",
+      "found": true,
+      "candidates": [
+        {
+          "url": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+          "extracted": {
+            "name": "Jane Doe",
+            "age": "35",
+            "addresses": [
+              "123 Pine St, Seattle, WA"
+            ],
+            "relatives": [
+              "John Doe",
+              "Mary Doe"
+            ],
+            "phones": [
+              "206-555-0114"
+            ]
+          },
+          "match_confidence": 0.9,
+          "evidence_snippets": [
+            "Jane Doe, Age 35",
+            "Seattle, Washington",
+            "Current Address: 123 Pine St Seattle WA",
+            "Phone: 206-555-0114",
+            "Relatives: John Doe, Mary Doe"
+          ]
+        }
+      ],
+      "notes": null
+    },
+    "match_decision": {
+      "siteId": "fastpeoplesearch",
+      "candidateId": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+      "decision": "exact_match",
+      "confidence": 0.9,
+      "rationale": "Captured listing matched Jane Doe with confidence 0.90 based on name, location, and available profile evidence.",
+      "evidence": [
+        {
+          "sourceType": "listing_page",
+          "sourceUrl": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+          "excerpt": "Jane Doe, Age 35",
+          "capturedAt": "2024-06-01T00:00:00.000Z",
+          "fields": [
+            {
+              "field": "full_name",
+              "value": "Jane Doe"
+            },
+            {
+              "field": "approx_age",
+              "value": "35"
+            },
+            {
+              "field": "address",
+              "value": "123 Pine St, Seattle, WA"
+            },
+            {
+              "field": "relative",
+              "value": "John Doe"
+            },
+            {
+              "field": "relative",
+              "value": "Mary Doe"
+            },
+            {
+              "field": "phone",
+              "value": "206-555-0114"
+            }
+          ]
+        },
+        {
+          "sourceType": "listing_page",
+          "sourceUrl": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+          "excerpt": "Seattle, Washington",
+          "capturedAt": "2024-06-01T00:00:00.000Z",
+          "fields": [
+            {
+              "field": "full_name",
+              "value": "Jane Doe"
+            },
+            {
+              "field": "approx_age",
+              "value": "35"
+            },
+            {
+              "field": "address",
+              "value": "123 Pine St, Seattle, WA"
+            },
+            {
+              "field": "relative",
+              "value": "John Doe"
+            },
+            {
+              "field": "relative",
+              "value": "Mary Doe"
+            },
+            {
+              "field": "phone",
+              "value": "206-555-0114"
+            }
+          ]
+        },
+        {
+          "sourceType": "listing_page",
+          "sourceUrl": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+          "excerpt": "Current Address: 123 Pine St Seattle WA",
+          "capturedAt": "2024-06-01T00:00:00.000Z",
+          "fields": [
+            {
+              "field": "full_name",
+              "value": "Jane Doe"
+            },
+            {
+              "field": "approx_age",
+              "value": "35"
+            },
+            {
+              "field": "address",
+              "value": "123 Pine St, Seattle, WA"
+            },
+            {
+              "field": "relative",
+              "value": "John Doe"
+            },
+            {
+              "field": "relative",
+              "value": "Mary Doe"
+            },
+            {
+              "field": "phone",
+              "value": "206-555-0114"
+            }
+          ]
+        },
+        {
+          "sourceType": "listing_page",
+          "sourceUrl": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+          "excerpt": "Phone: 206-555-0114",
+          "capturedAt": "2024-06-01T00:00:00.000Z",
+          "fields": [
+            {
+              "field": "full_name",
+              "value": "Jane Doe"
+            },
+            {
+              "field": "approx_age",
+              "value": "35"
+            },
+            {
+              "field": "address",
+              "value": "123 Pine St, Seattle, WA"
+            },
+            {
+              "field": "relative",
+              "value": "John Doe"
+            },
+            {
+              "field": "relative",
+              "value": "Mary Doe"
+            },
+            {
+              "field": "phone",
+              "value": "206-555-0114"
+            }
+          ]
+        },
+        {
+          "sourceType": "listing_page",
+          "sourceUrl": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+          "excerpt": "Relatives: John Doe, Mary Doe",
+          "capturedAt": "2024-06-01T00:00:00.000Z",
+          "fields": [
+            {
+              "field": "full_name",
+              "value": "Jane Doe"
+            },
+            {
+              "field": "approx_age",
+              "value": "35"
+            },
+            {
+              "field": "address",
+              "value": "123 Pine St, Seattle, WA"
+            },
+            {
+              "field": "relative",
+              "value": "John Doe"
+            },
+            {
+              "field": "relative",
+              "value": "Mary Doe"
+            },
+            {
+              "field": "phone",
+              "value": "206-555-0114"
+            }
+          ]
+        }
+      ],
+      "reviewReasons": []
+    },
+    "retrieve_procedure": {
+      "site": "FastPeopleSearch",
+      "procedure_type": "webform",
+      "required_fields": [
+        "full_name",
+        "privacy_email"
+      ],
+      "steps": [
+        "Use the FastPeopleSearch removal webform to request record suppression.",
+        "Provide the full name and privacy email in the form.",
+        "Check the consent checkbox before form submission."
+      ],
+      "source_chunks": [
+        {
+          "doc_id": "fps-proc-1",
+          "quote": "Use the FastPeopleSearch removal webform to request record suppression.",
+          "source_id": "fps-proc-1",
+          "source_updated_at": null,
+          "retrieved_at": null
+        },
+        {
+          "doc_id": "fps-proc-2",
+          "quote": "Required fields: full name and privacy email. Check the consent checkbox before form submission.",
+          "source_id": "fps-proc-2",
+          "source_updated_at": null,
+          "retrieved_at": null
+        }
+      ]
+    },
+    "draft_optout": {
+      "site": "FastPeopleSearch",
+      "candidate_url": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+      "submission_channel": "webform",
+      "procedure_type": "webform",
+      "required_fields": [
+        {
+          "name": "full_name",
+          "value": "Jane Doe",
+          "required": true
+        },
+        {
+          "name": "privacy_email",
+          "value": "shield-abc123@detraceme.io",
+          "required": true
+        }
+      ],
+      "optional_fields": [],
+      "manual_review_required": false,
+      "review_reasons": [],
+      "webform": {
+        "fields": [
+          {
+            "name": "full_name",
+            "value": "Jane Doe"
+          },
+          {
+            "name": "privacy_email",
+            "value": "shield-abc123@detraceme.io"
+          }
+        ],
+        "consent_checkboxes": [
+          {
+            "label": "I confirm this is my information",
+            "instruction": "Check the consent box.",
+            "required": true
+          }
+        ]
+      }
+    },
+    "plan_submission": {
+      "action_plan": {
+        "site": "FastPeopleSearch",
+        "candidate_url": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+        "submission_channel": "webform",
+        "procedure_type": "webform",
+        "required_fields": [
+          {
+            "name": "full_name",
+            "value": "Jane Doe",
+            "required": true
+          },
+          {
+            "name": "privacy_email",
+            "value": "shield-abc123@detraceme.io",
+            "required": true
+          }
+        ],
+        "optional_fields": [],
+        "manual_review_required": false,
+        "review_reasons": [],
+        "webform": {
+          "fields": [
+            {
+              "name": "full_name",
+              "value": "Jane Doe"
+            },
+            {
+              "name": "privacy_email",
+              "value": "shield-abc123@detraceme.io"
+            }
+          ],
+          "consent_checkboxes": [
+            {
+              "label": "I confirm this is my information",
+              "instruction": "Check the consent box.",
+              "required": true
+            }
+          ]
+        }
+      },
+      "requires_manual_review": false,
+      "review_reasons": []
+    },
+    "interpret_result": {
+      "next_status": "pending",
+      "next_action": "await_confirmation",
+      "review_reasons": []
+    },
+    "automation_record": {
+      "handoff": {
+        "handoffId": "fastpeoplesearch-run-fps-milestone-fixture-confirmation-1773392287204-handoff",
+        "mode": "auto",
+        "requiresUserApproval": false,
+        "reviewReasons": [],
+        "payload": {
+          "siteId": "FastPeopleSearch",
+          "candidateId": "fastpeoplesearch-candidate-1",
+          "procedureId": "fastpeoplesearch-workflow-procedure",
+          "procedureVersion": "workflow-v1",
+          "submissionChannel": "webform",
+          "fields": {
+            "candidate_url": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+            "full_name": "Jane Doe",
+            "privacy_email": "shield-abc123@detraceme.io",
+            "state": "Washington",
+            "removal_reason": "This is my personal information"
+          },
+          "steps": [
+            {
+              "stepId": "fps_step_1",
+              "action": "navigate",
+              "instruction": "Open the FastPeopleSearch removal page.",
+              "targetUrl": "https://www.fastpeoplesearch.com/removal",
+              "required": true
+            },
+            {
+              "stepId": "fps_step_2",
+              "action": "fill",
+              "instruction": "Enter the privacy email address.",
+              "selector": "#fp_email",
+              "inputKey": "privacy_email",
+              "required": true
+            },
+            {
+              "stepId": "fps_step_3",
+              "action": "fill",
+              "instruction": "Enter the full name to search for the record.",
+              "selector": "#fp_name",
+              "inputKey": "full_name",
+              "required": true
+            },
+            {
+              "stepId": "fps_step_4",
+              "action": "select",
+              "instruction": "Select the state associated with the listing.",
+              "selector": "#fp_state",
+              "inputKey": "state",
+              "required": true
+            },
+            {
+              "stepId": "fps_step_5",
+              "action": "click",
+              "instruction": "Search for the matching FastPeopleSearch record.",
+              "selector": "#search-record",
+              "required": true
+            },
+            {
+              "stepId": "fps_step_6",
+              "action": "click",
+              "instruction": "Select the first matching record for removal.",
+              "selector": "input[name='selected-record']",
+              "required": true
+            },
+            {
+              "stepId": "fps_step_7",
+              "action": "select",
+              "instruction": "Choose the default privacy removal reason.",
+              "selector": "#removal-reason",
+              "inputKey": "removal_reason",
+              "required": false
+            },
+            {
+              "stepId": "fps_step_8",
+              "action": "click",
+              "instruction": "Submit the FastPeopleSearch removal request.",
+              "selector": "#submit-removal",
+              "required": true
+            }
+          ],
+          "draft": {
+            "draftId": "fastpeoplesearch-draft",
+            "siteId": "FastPeopleSearch",
+            "candidateId": "fastpeoplesearch-candidate-1",
+            "submissionChannel": "webform",
+            "body": "Workflow-generated removal request for FastPeopleSearch.",
+            "factsUsed": [
+              {
+                "field": "full_name",
+                "value": "Jane Doe"
+              },
+              {
+                "field": "privacy_email",
+                "value": "shield-abc123@detraceme.io"
+              }
+            ],
+            "procedureId": "fastpeoplesearch-workflow-procedure",
+            "generatedAt": "2026-03-13T08:58:18.650Z"
+          }
+        },
+        "createdAt": "2026-03-13T08:58:18.650Z"
+      },
+      "executionResult": {
+        "site": "FastPeopleSearch",
+        "candidate_url": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+        "status": "pending",
+        "manual_review_required": false,
+        "confirmation_text": "Your removal request has been received and is pending review.",
+        "ticket_ids": [],
+        "screenshot_ref": "automation/fastpeoplesearch/fastpeoplesearch-run-fps-milestone-fixture-confirmation-1773392287204-handoff/success-screenshot",
+        "error_text": null
+      },
+      "evidence": {
+        "startedAt": "2026-03-13T08:58:18.651Z",
+        "completedAt": "2026-03-13T08:58:18.653Z",
+        "siteId": "FastPeopleSearch",
+        "handoffId": "fastpeoplesearch-run-fps-milestone-fixture-confirmation-1773392287204-handoff",
+        "executorId": "fastpeoplesearch-site-adapter",
+        "failureCode": null,
+        "reviewReasons": [],
+        "artifacts": [
+          {
+            "artifactId": "fastpeoplesearch-fastpeoplesearch-run-fps-milestone-fixture-confirmation-1773392287204-handoff-step-log",
+            "kind": "execution_log",
+            "label": "Automation step log",
+            "createdAt": "2026-03-13T08:58:18.652Z",
+            "ref": "automation/fastpeoplesearch/fastpeoplesearch-run-fps-milestone-fixture-confirmation-1773392287204-handoff/step-log",
+            "contentType": "application/json",
+            "content": "[\n  {\n    \"stepId\": \"fps_step_1\",\n    \"action\": \"navigate\",\n    \"attempt\": 1,\n    \"status\": \"completed\",\n    \"startedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"completedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"durationMs\": 0,\n    \"targetUrl\": \"https://www.fastpeoplesearch.com/removal\",\n    \"message\": \"navigate:fps_step_1 completed\",\n    \"artifactIds\": []\n  },\n  {\n    \"stepId\": \"fps_step_2\",\n    \"action\": \"fill\",\n    \"attempt\": 1,\n    \"status\": \"completed\",\n    \"startedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"completedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"durationMs\": 0,\n    \"selector\": \"#fp_email\",\n    \"inputKey\": \"privacy_email\",\n    \"message\": \"fill:fps_step_2 completed\",\n    \"artifactIds\": []\n  },\n  {\n    \"stepId\": \"fps_step_3\",\n    \"action\": \"fill\",\n    \"attempt\": 1,\n    \"status\": \"completed\",\n    \"startedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"completedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"durationMs\": 0,\n    \"selector\": \"#fp_name\",\n    \"inputKey\": \"full_name\",\n    \"message\": \"fill:fps_step_3 completed\",\n    \"artifactIds\": []\n  },\n  {\n    \"stepId\": \"fps_step_4\",\n    \"action\": \"select\",\n    \"attempt\": 1,\n    \"status\": \"completed\",\n    \"startedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"completedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"durationMs\": 0,\n    \"selector\": \"#fp_state\",\n    \"inputKey\": \"state\",\n    \"message\": \"select:fps_step_4 completed\",\n    \"artifactIds\": []\n  },\n  {\n    \"stepId\": \"fps_step_5\",\n    \"action\": \"click\",\n    \"attempt\": 1,\n    \"status\": \"completed\",\n    \"startedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"completedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"durationMs\": 0,\n    \"selector\": \"#search-record\",\n    \"message\": \"click:fps_step_5 completed\",\n    \"artifactIds\": []\n  },\n  {\n    \"stepId\": \"fps_step_6\",\n    \"action\": \"click\",\n    \"attempt\": 1,\n    \"status\": \"completed\",\n    \"startedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"completedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"durationMs\": 0,\n    \"selector\": \"input[name='selected-record']\",\n    \"message\": \"click:fps_step_6 completed\",\n    \"artifactIds\": []\n  },\n  {\n    \"stepId\": \"fps_step_7\",\n    \"action\": \"select\",\n    \"attempt\": 1,\n    \"status\": \"completed\",\n    \"startedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"completedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"durationMs\": 0,\n    \"selector\": \"#removal-reason\",\n    \"inputKey\": \"removal_reason\",\n    \"message\": \"select:fps_step_7 completed\",\n    \"artifactIds\": []\n  },\n  {\n    \"stepId\": \"fps_step_8\",\n    \"action\": \"click\",\n    \"attempt\": 1,\n    \"status\": \"completed\",\n    \"startedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"completedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"durationMs\": 0,\n    \"selector\": \"#submit-removal\",\n    \"message\": \"click:fps_step_8 completed\",\n    \"artifactIds\": []\n  }\n]",
+            "metadata": {
+              "step_count": 8
+            }
+          },
+          {
+            "artifactId": "fastpeoplesearch-fastpeoplesearch-run-fps-milestone-fixture-confirmation-1773392287204-handoff-final-page-text",
+            "kind": "page_text",
+            "label": "Final page text capture",
+            "createdAt": "2026-03-13T08:58:18.652Z",
+            "ref": "automation/fastpeoplesearch/fastpeoplesearch-run-fps-milestone-fixture-confirmation-1773392287204-handoff/final-page-text",
+            "contentType": "text/plain",
+            "content": "Your removal request has been received and is pending review."
+          },
+          {
+            "artifactId": "fastpeoplesearch-fastpeoplesearch-run-fps-milestone-fixture-confirmation-1773392287204-handoff-success-screenshot",
+            "kind": "screenshot",
+            "label": "Success screenshot",
+            "createdAt": "2026-03-13T08:58:18.652Z",
+            "ref": "automation/fastpeoplesearch/fastpeoplesearch-run-fps-milestone-fixture-confirmation-1773392287204-handoff/success-screenshot",
+            "contentType": "image/png",
+            "content": "ZmFzdHBlb3BsZXNlYXJjaC1taWxlc3RvbmU="
+          }
+        ],
+        "stepOutcomes": [
+          {
+            "stepId": "fps_step_1",
+            "action": "navigate",
+            "instruction": "Open the FastPeopleSearch removal page.",
+            "status": "completed",
+            "startedAt": "2026-03-13T08:58:18.652Z",
+            "completedAt": "2026-03-13T08:58:18.652Z",
+            "targetUrl": "https://www.fastpeoplesearch.com/removal",
+            "artifactIds": [],
+            "notes": "Completed on attempt 1."
+          },
+          {
+            "stepId": "fps_step_2",
+            "action": "fill",
+            "instruction": "Enter the privacy email address.",
+            "status": "completed",
+            "startedAt": "2026-03-13T08:58:18.652Z",
+            "completedAt": "2026-03-13T08:58:18.652Z",
+            "selector": "#fp_email",
+            "artifactIds": [],
+            "notes": "Completed on attempt 1."
+          },
+          {
+            "stepId": "fps_step_3",
+            "action": "fill",
+            "instruction": "Enter the full name to search for the record.",
+            "status": "completed",
+            "startedAt": "2026-03-13T08:58:18.652Z",
+            "completedAt": "2026-03-13T08:58:18.652Z",
+            "selector": "#fp_name",
+            "artifactIds": [],
+            "notes": "Completed on attempt 1."
+          },
+          {
+            "stepId": "fps_step_4",
+            "action": "select",
+            "instruction": "Select the state associated with the listing.",
+            "status": "completed",
+            "startedAt": "2026-03-13T08:58:18.652Z",
+            "completedAt": "2026-03-13T08:58:18.652Z",
+            "selector": "#fp_state",
+            "artifactIds": [],
+            "notes": "Completed on attempt 1."
+          },
+          {
+            "stepId": "fps_step_5",
+            "action": "click",
+            "instruction": "Search for the matching FastPeopleSearch record.",
+            "status": "completed",
+            "startedAt": "2026-03-13T08:58:18.652Z",
+            "completedAt": "2026-03-13T08:58:18.652Z",
+            "selector": "#search-record",
+            "artifactIds": [],
+            "notes": "Completed on attempt 1."
+          },
+          {
+            "stepId": "fps_step_6",
+            "action": "click",
+            "instruction": "Select the first matching record for removal.",
+            "status": "completed",
+            "startedAt": "2026-03-13T08:58:18.652Z",
+            "completedAt": "2026-03-13T08:58:18.652Z",
+            "selector": "input[name='selected-record']",
+            "artifactIds": [],
+            "notes": "Completed on attempt 1."
+          },
+          {
+            "stepId": "fps_step_7",
+            "action": "select",
+            "instruction": "Choose the default privacy removal reason.",
+            "status": "completed",
+            "startedAt": "2026-03-13T08:58:18.652Z",
+            "completedAt": "2026-03-13T08:58:18.652Z",
+            "selector": "#removal-reason",
+            "artifactIds": [],
+            "notes": "Completed on attempt 1."
+          },
+          {
+            "stepId": "fps_step_8",
+            "action": "click",
+            "instruction": "Submit the FastPeopleSearch removal request.",
+            "status": "completed",
+            "startedAt": "2026-03-13T08:58:18.652Z",
+            "completedAt": "2026-03-13T08:58:18.652Z",
+            "selector": "#submit-removal",
+            "artifactIds": [],
+            "notes": "Completed on attempt 1."
+          }
+        ]
+      }
+    },
+    "monitoring": {
+      "status": "awaiting_confirmation",
+      "reason": "pending_confirmation",
+      "last_scan_at": "2024-06-01T00:00:00.000Z",
+      "next_scan_at": "2024-07-01T00:00:00.000Z",
+      "cooldown_ends_at": null,
+      "reappearance_count": 0,
+      "trigger_new_removal_cycle": false,
+      "backend_required": true,
+      "notes": "Submission for FastPeopleSearch is still awaiting confirmation; schedule a follow-up check on the local monitoring cadence until backend support lands."
+    },
+    "prompt_trace": {
+      "discovery_parse": {
+        "prompt_name": "listing_classifier_extractor",
+        "prompt_version": "2026-03-13.2"
+      },
+      "retrieve_procedure": {
+        "prompt_name": "procedure_selector",
+        "prompt_version": "2026-03-13.2"
+      },
+      "draft_optout": {
+        "prompt_name": "draft_generator",
+        "prompt_version": "2026-03-13.2"
+      },
+      "interpret_result": {
+        "prompt_name": "post_execution_verifier",
+        "prompt_version": "2026-03-13.3"
+      }
+    },
+    "terminal_path": "await_confirmation",
+    "checkpoint": null,
+    "site_runs": [
+      {
+        "site_input": {
+          "site": "FastPeopleSearch",
+          "page_artifact": {
+            "visible_text": "Jane Doe, Age 35\r\nSeattle, Washington\r\nCurrent Address: 123 Pine St Seattle WA\r\nPrevious City: Tacoma WA\r\nPhone: 206-555-0114\r\nRelatives: John Doe, Mary Doe",
+            "url": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+            "screenshot_ref": "fixtures/fastpeoplesearch-listing.png",
+            "extracted_metadata": {
+              "title": "Jane Doe in Seattle, WA | FastPeopleSearch",
+              "page_category": "listing_detail",
+              "headings": []
+            }
+          },
+          "retrieved_chunks": [
+            {
+              "doc_id": "fps-proc-1",
+              "quote": "Use the FastPeopleSearch removal webform to request record suppression.",
+              "source_id": "fps-proc-1",
+              "source_updated_at": null,
+              "retrieved_at": null
+            },
+            {
+              "doc_id": "fps-proc-2",
+              "quote": "Required fields: full name and privacy email. Check the consent checkbox before form submission.",
+              "source_id": "fps-proc-2",
+              "source_updated_at": null,
+              "retrieved_at": null
+            }
+          ],
+          "execution_result": {
+            "site": "FastPeopleSearch",
+            "candidate_url": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+            "status": "pending",
+            "manual_review_required": false,
+            "confirmation_text": "Your removal request has been received and is pending review.",
+            "ticket_ids": [],
+            "screenshot_ref": "automation/fastpeoplesearch/fastpeoplesearch-run-fps-milestone-fixture-confirmation-1773392287204-handoff/success-screenshot",
+            "error_text": null
+          },
+          "retry_count": 0
+        },
+        "context": {
+          "run_id": "run_fps_milestone_fixture_confirmation_1773392287204",
+          "policy_defaults": {
+            "match_confidence_threshold": 0.75,
+            "max_submission_retries": 1,
+            "monitoring_cadence_days": 30,
+            "re_review_cooldown_days": 30,
+            "re_review_listing_reappearance_threshold": 1,
+            "require_explicit_consent": true,
+            "minimize_pii": true,
+            "require_retrieval_grounding": true,
+            "low_confidence_match_strategy": "block",
+            "stale_procedure_strategy": "block",
+            "contradictory_procedure_strategy": "block",
+            "pending_confirmation_strategy": "await_confirmation",
+            "captcha_failure_strategy": "request_user_review",
+            "manual_requirement_strategy": "request_user_review"
+          },
+          "policy_overrides": {
+            "match_confidence_threshold": 0.75,
+            "max_submission_retries": 1,
+            "monitoring_cadence_days": 30,
+            "re_review_cooldown_days": 30,
+            "re_review_listing_reappearance_threshold": 1,
+            "require_explicit_consent": true,
+            "minimize_pii": true,
+            "require_retrieval_grounding": true,
+            "low_confidence_match_strategy": "block",
+            "stale_procedure_strategy": "block",
+            "contradictory_procedure_strategy": "block",
+            "pending_confirmation_strategy": "await_confirmation",
+            "captcha_failure_strategy": "request_user_review",
+            "manual_requirement_strategy": "request_user_review"
+          },
+          "policy": {
+            "match_confidence_threshold": 0.75,
+            "max_submission_retries": 1,
+            "monitoring_cadence_days": 30,
+            "re_review_cooldown_days": 30,
+            "re_review_listing_reappearance_threshold": 1,
+            "require_explicit_consent": true,
+            "minimize_pii": true,
+            "require_retrieval_grounding": true,
+            "low_confidence_match_strategy": "block",
+            "stale_procedure_strategy": "block",
+            "contradictory_procedure_strategy": "block",
+            "pending_confirmation_strategy": "await_confirmation",
+            "captcha_failure_strategy": "request_user_review",
+            "manual_requirement_strategy": "request_user_review"
+          },
+          "review_reasons": [],
+          "events": [
+            {
+              "eventId": "evt_fastpeoplesearch_intake_7",
+              "runId": "run_fps_milestone_fixture_confirmation_1773392287204",
+              "phase": "intake",
+              "status": "completed",
+              "message": "Consent validated for FastPeopleSearch.",
+              "createdAt": "2026-03-13T08:58:18.667Z",
+              "siteId": "fastpeoplesearch",
+              "reviewReasons": []
+            },
+            {
+              "eventId": "evt_fastpeoplesearch_match_8",
+              "runId": "run_fps_milestone_fixture_confirmation_1773392287204",
+              "phase": "match",
+              "status": "completed",
+              "message": "Discovery produced 1 candidate(s) for FastPeopleSearch.",
+              "createdAt": "2024-06-01T00:00:00.000Z",
+              "siteId": "fastpeoplesearch",
+              "candidateId": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+              "reviewReasons": []
+            },
+            {
+              "eventId": "evt_fastpeoplesearch_retrieve_procedure_9",
+              "runId": "run_fps_milestone_fixture_confirmation_1773392287204",
+              "phase": "retrieve_procedure",
+              "status": "completed",
+              "message": "Procedure resolution found for FastPeopleSearch; selected webform.",
+              "createdAt": "2026-03-13T08:58:33.309Z",
+              "siteId": "fastpeoplesearch",
+              "candidateId": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+              "reviewReasons": []
+            },
+            {
+              "eventId": "evt_fastpeoplesearch_draft_10",
+              "runId": "run_fps_milestone_fixture_confirmation_1773392287204",
+              "phase": "draft",
+              "status": "completed",
+              "message": "Drafted webform submission payload for FastPeopleSearch.",
+              "createdAt": "2026-03-13T08:58:37.071Z",
+              "siteId": "fastpeoplesearch",
+              "candidateId": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+              "reviewReasons": []
+            },
+            {
+              "eventId": "evt_fastpeoplesearch_approval_11",
+              "runId": "run_fps_milestone_fixture_confirmation_1773392287204",
+              "phase": "approval",
+              "status": "completed",
+              "message": "Submission plan accepted for FastPeopleSearch.",
+              "createdAt": "2026-03-13T08:58:37.073Z",
+              "siteId": "fastpeoplesearch",
+              "candidateId": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+              "reviewReasons": []
+            },
+            {
+              "eventId": "evt_fastpeoplesearch_verification_12",
+              "runId": "run_fps_milestone_fixture_confirmation_1773392287204",
+              "phase": "verification",
+              "status": "awaiting_user",
+              "message": "Execution result interpreted for FastPeopleSearch: status=pending, action=await_confirmation.",
+              "createdAt": "2026-03-13T08:58:38.154Z",
+              "siteId": "fastpeoplesearch",
+              "candidateId": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+              "reviewReasons": []
+            },
+            {
+              "eventId": "evt_fastpeoplesearch_verification_13",
+              "runId": "run_fps_milestone_fixture_confirmation_1773392287204",
+              "phase": "verification",
+              "status": "awaiting_user",
+              "message": "Submission pending confirmation for FastPeopleSearch.",
+              "createdAt": "2026-03-13T08:58:38.161Z",
+              "siteId": "fastpeoplesearch",
+              "candidateId": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+              "reviewReasons": []
+            }
+          ]
+        },
+        "validate_consent": {
+          "seed_profile": {
+            "full_name": "Jane Doe",
+            "name_variants": [
+              "Jane A Doe",
+              "J. Doe"
+            ],
+            "location": {
+              "city": "Seattle",
+              "state": "Washington"
+            },
+            "approx_age": "35",
+            "privacy_email": "shield-abc123@detraceme.io",
+            "optional": {
+              "phone_last4": "0114",
+              "prior_cities": [
+                "Tacoma"
+              ]
+            },
+            "consent": true
+          },
+          "normalized_query": "Jane Doe Seattle Washington",
+          "approved_for_submission": true
+        },
+        "discovery_parse": {
+          "site": "FastPeopleSearch",
+          "scan_timestamp": "2024-06-01T00:00:00.000Z",
+          "found": true,
+          "candidates": [
+            {
+              "url": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+              "extracted": {
+                "name": "Jane Doe",
+                "age": "35",
+                "addresses": [
+                  "123 Pine St, Seattle, WA"
+                ],
+                "relatives": [
+                  "John Doe",
+                  "Mary Doe"
+                ],
+                "phones": [
+                  "206-555-0114"
+                ]
+              },
+              "match_confidence": 0.9,
+              "evidence_snippets": [
+                "Jane Doe, Age 35",
+                "Seattle, Washington",
+                "Current Address: 123 Pine St Seattle WA",
+                "Phone: 206-555-0114",
+                "Relatives: John Doe, Mary Doe"
+              ]
+            }
+          ],
+          "notes": null
+        },
+        "match_decision": {
+          "siteId": "fastpeoplesearch",
+          "candidateId": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+          "decision": "exact_match",
+          "confidence": 0.9,
+          "rationale": "Captured listing matched Jane Doe with confidence 0.90 based on name, location, and available profile evidence.",
+          "evidence": [
+            {
+              "sourceType": "listing_page",
+              "sourceUrl": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+              "excerpt": "Jane Doe, Age 35",
+              "capturedAt": "2024-06-01T00:00:00.000Z",
+              "fields": [
+                {
+                  "field": "full_name",
+                  "value": "Jane Doe"
+                },
+                {
+                  "field": "approx_age",
+                  "value": "35"
+                },
+                {
+                  "field": "address",
+                  "value": "123 Pine St, Seattle, WA"
+                },
+                {
+                  "field": "relative",
+                  "value": "John Doe"
+                },
+                {
+                  "field": "relative",
+                  "value": "Mary Doe"
+                },
+                {
+                  "field": "phone",
+                  "value": "206-555-0114"
+                }
+              ]
+            },
+            {
+              "sourceType": "listing_page",
+              "sourceUrl": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+              "excerpt": "Seattle, Washington",
+              "capturedAt": "2024-06-01T00:00:00.000Z",
+              "fields": [
+                {
+                  "field": "full_name",
+                  "value": "Jane Doe"
+                },
+                {
+                  "field": "approx_age",
+                  "value": "35"
+                },
+                {
+                  "field": "address",
+                  "value": "123 Pine St, Seattle, WA"
+                },
+                {
+                  "field": "relative",
+                  "value": "John Doe"
+                },
+                {
+                  "field": "relative",
+                  "value": "Mary Doe"
+                },
+                {
+                  "field": "phone",
+                  "value": "206-555-0114"
+                }
+              ]
+            },
+            {
+              "sourceType": "listing_page",
+              "sourceUrl": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+              "excerpt": "Current Address: 123 Pine St Seattle WA",
+              "capturedAt": "2024-06-01T00:00:00.000Z",
+              "fields": [
+                {
+                  "field": "full_name",
+                  "value": "Jane Doe"
+                },
+                {
+                  "field": "approx_age",
+                  "value": "35"
+                },
+                {
+                  "field": "address",
+                  "value": "123 Pine St, Seattle, WA"
+                },
+                {
+                  "field": "relative",
+                  "value": "John Doe"
+                },
+                {
+                  "field": "relative",
+                  "value": "Mary Doe"
+                },
+                {
+                  "field": "phone",
+                  "value": "206-555-0114"
+                }
+              ]
+            },
+            {
+              "sourceType": "listing_page",
+              "sourceUrl": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+              "excerpt": "Phone: 206-555-0114",
+              "capturedAt": "2024-06-01T00:00:00.000Z",
+              "fields": [
+                {
+                  "field": "full_name",
+                  "value": "Jane Doe"
+                },
+                {
+                  "field": "approx_age",
+                  "value": "35"
+                },
+                {
+                  "field": "address",
+                  "value": "123 Pine St, Seattle, WA"
+                },
+                {
+                  "field": "relative",
+                  "value": "John Doe"
+                },
+                {
+                  "field": "relative",
+                  "value": "Mary Doe"
+                },
+                {
+                  "field": "phone",
+                  "value": "206-555-0114"
+                }
+              ]
+            },
+            {
+              "sourceType": "listing_page",
+              "sourceUrl": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+              "excerpt": "Relatives: John Doe, Mary Doe",
+              "capturedAt": "2024-06-01T00:00:00.000Z",
+              "fields": [
+                {
+                  "field": "full_name",
+                  "value": "Jane Doe"
+                },
+                {
+                  "field": "approx_age",
+                  "value": "35"
+                },
+                {
+                  "field": "address",
+                  "value": "123 Pine St, Seattle, WA"
+                },
+                {
+                  "field": "relative",
+                  "value": "John Doe"
+                },
+                {
+                  "field": "relative",
+                  "value": "Mary Doe"
+                },
+                {
+                  "field": "phone",
+                  "value": "206-555-0114"
+                }
+              ]
+            }
+          ],
+          "reviewReasons": []
+        },
+        "retrieve_procedure": {
+          "site": "FastPeopleSearch",
+          "procedure_type": "webform",
+          "required_fields": [
+            "full_name",
+            "privacy_email"
+          ],
+          "steps": [
+            "Use the FastPeopleSearch removal webform to request record suppression.",
+            "Provide the full name and privacy email in the form.",
+            "Check the consent checkbox before form submission."
+          ],
+          "source_chunks": [
+            {
+              "doc_id": "fps-proc-1",
+              "quote": "Use the FastPeopleSearch removal webform to request record suppression.",
+              "source_id": "fps-proc-1",
+              "source_updated_at": null,
+              "retrieved_at": null
+            },
+            {
+              "doc_id": "fps-proc-2",
+              "quote": "Required fields: full name and privacy email. Check the consent checkbox before form submission.",
+              "source_id": "fps-proc-2",
+              "source_updated_at": null,
+              "retrieved_at": null
+            }
+          ]
+        },
+        "draft_optout": {
+          "site": "FastPeopleSearch",
+          "candidate_url": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+          "submission_channel": "webform",
+          "procedure_type": "webform",
+          "required_fields": [
+            {
+              "name": "full_name",
+              "value": "Jane Doe",
+              "required": true
+            },
+            {
+              "name": "privacy_email",
+              "value": "shield-abc123@detraceme.io",
+              "required": true
+            }
+          ],
+          "optional_fields": [],
+          "manual_review_required": false,
+          "review_reasons": [],
+          "webform": {
+            "fields": [
+              {
+                "name": "full_name",
+                "value": "Jane Doe"
+              },
+              {
+                "name": "privacy_email",
+                "value": "shield-abc123@detraceme.io"
+              }
+            ],
+            "consent_checkboxes": [
+              {
+                "label": "I confirm this is my information",
+                "instruction": "Check the consent box.",
+                "required": true
+              }
+            ]
+          }
+        },
+        "plan_submission": {
+          "action_plan": {
+            "site": "FastPeopleSearch",
+            "candidate_url": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+            "submission_channel": "webform",
+            "procedure_type": "webform",
+            "required_fields": [
+              {
+                "name": "full_name",
+                "value": "Jane Doe",
+                "required": true
+              },
+              {
+                "name": "privacy_email",
+                "value": "shield-abc123@detraceme.io",
+                "required": true
+              }
+            ],
+            "optional_fields": [],
+            "manual_review_required": false,
+            "review_reasons": [],
+            "webform": {
+              "fields": [
+                {
+                  "name": "full_name",
+                  "value": "Jane Doe"
+                },
+                {
+                  "name": "privacy_email",
+                  "value": "shield-abc123@detraceme.io"
+                }
+              ],
+              "consent_checkboxes": [
+                {
+                  "label": "I confirm this is my information",
+                  "instruction": "Check the consent box.",
+                  "required": true
+                }
+              ]
+            }
+          },
+          "requires_manual_review": false,
+          "review_reasons": []
+        },
+        "interpret_result": {
+          "next_status": "pending",
+          "next_action": "await_confirmation",
+          "review_reasons": []
+        },
+        "automation_record": {
+          "handoff": {
+            "handoffId": "fastpeoplesearch-run-fps-milestone-fixture-confirmation-1773392287204-handoff",
+            "mode": "auto",
+            "requiresUserApproval": false,
+            "reviewReasons": [],
+            "payload": {
+              "siteId": "FastPeopleSearch",
+              "candidateId": "fastpeoplesearch-candidate-1",
+              "procedureId": "fastpeoplesearch-workflow-procedure",
+              "procedureVersion": "workflow-v1",
+              "submissionChannel": "webform",
+              "fields": {
+                "candidate_url": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+                "full_name": "Jane Doe",
+                "privacy_email": "shield-abc123@detraceme.io",
+                "state": "Washington",
+                "removal_reason": "This is my personal information"
+              },
+              "steps": [
+                {
+                  "stepId": "fps_step_1",
+                  "action": "navigate",
+                  "instruction": "Open the FastPeopleSearch removal page.",
+                  "targetUrl": "https://www.fastpeoplesearch.com/removal",
+                  "required": true
+                },
+                {
+                  "stepId": "fps_step_2",
+                  "action": "fill",
+                  "instruction": "Enter the privacy email address.",
+                  "selector": "#fp_email",
+                  "inputKey": "privacy_email",
+                  "required": true
+                },
+                {
+                  "stepId": "fps_step_3",
+                  "action": "fill",
+                  "instruction": "Enter the full name to search for the record.",
+                  "selector": "#fp_name",
+                  "inputKey": "full_name",
+                  "required": true
+                },
+                {
+                  "stepId": "fps_step_4",
+                  "action": "select",
+                  "instruction": "Select the state associated with the listing.",
+                  "selector": "#fp_state",
+                  "inputKey": "state",
+                  "required": true
+                },
+                {
+                  "stepId": "fps_step_5",
+                  "action": "click",
+                  "instruction": "Search for the matching FastPeopleSearch record.",
+                  "selector": "#search-record",
+                  "required": true
+                },
+                {
+                  "stepId": "fps_step_6",
+                  "action": "click",
+                  "instruction": "Select the first matching record for removal.",
+                  "selector": "input[name='selected-record']",
+                  "required": true
+                },
+                {
+                  "stepId": "fps_step_7",
+                  "action": "select",
+                  "instruction": "Choose the default privacy removal reason.",
+                  "selector": "#removal-reason",
+                  "inputKey": "removal_reason",
+                  "required": false
+                },
+                {
+                  "stepId": "fps_step_8",
+                  "action": "click",
+                  "instruction": "Submit the FastPeopleSearch removal request.",
+                  "selector": "#submit-removal",
+                  "required": true
+                }
+              ],
+              "draft": {
+                "draftId": "fastpeoplesearch-draft",
+                "siteId": "FastPeopleSearch",
+                "candidateId": "fastpeoplesearch-candidate-1",
+                "submissionChannel": "webform",
+                "body": "Workflow-generated removal request for FastPeopleSearch.",
+                "factsUsed": [
+                  {
+                    "field": "full_name",
+                    "value": "Jane Doe"
+                  },
+                  {
+                    "field": "privacy_email",
+                    "value": "shield-abc123@detraceme.io"
+                  }
+                ],
+                "procedureId": "fastpeoplesearch-workflow-procedure",
+                "generatedAt": "2026-03-13T08:58:18.650Z"
+              }
+            },
+            "createdAt": "2026-03-13T08:58:18.650Z"
+          },
+          "executionResult": {
+            "site": "FastPeopleSearch",
+            "candidate_url": "https://fastpeoplesearch.test/listing/jane-doe-seattle-wa",
+            "status": "pending",
+            "manual_review_required": false,
+            "confirmation_text": "Your removal request has been received and is pending review.",
+            "ticket_ids": [],
+            "screenshot_ref": "automation/fastpeoplesearch/fastpeoplesearch-run-fps-milestone-fixture-confirmation-1773392287204-handoff/success-screenshot",
+            "error_text": null
+          },
+          "evidence": {
+            "startedAt": "2026-03-13T08:58:18.651Z",
+            "completedAt": "2026-03-13T08:58:18.653Z",
+            "siteId": "FastPeopleSearch",
+            "handoffId": "fastpeoplesearch-run-fps-milestone-fixture-confirmation-1773392287204-handoff",
+            "executorId": "fastpeoplesearch-site-adapter",
+            "failureCode": null,
+            "reviewReasons": [],
+            "artifacts": [
+              {
+                "artifactId": "fastpeoplesearch-fastpeoplesearch-run-fps-milestone-fixture-confirmation-1773392287204-handoff-step-log",
+                "kind": "execution_log",
+                "label": "Automation step log",
+                "createdAt": "2026-03-13T08:58:18.652Z",
+                "ref": "automation/fastpeoplesearch/fastpeoplesearch-run-fps-milestone-fixture-confirmation-1773392287204-handoff/step-log",
+                "contentType": "application/json",
+                "content": "[\n  {\n    \"stepId\": \"fps_step_1\",\n    \"action\": \"navigate\",\n    \"attempt\": 1,\n    \"status\": \"completed\",\n    \"startedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"completedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"durationMs\": 0,\n    \"targetUrl\": \"https://www.fastpeoplesearch.com/removal\",\n    \"message\": \"navigate:fps_step_1 completed\",\n    \"artifactIds\": []\n  },\n  {\n    \"stepId\": \"fps_step_2\",\n    \"action\": \"fill\",\n    \"attempt\": 1,\n    \"status\": \"completed\",\n    \"startedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"completedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"durationMs\": 0,\n    \"selector\": \"#fp_email\",\n    \"inputKey\": \"privacy_email\",\n    \"message\": \"fill:fps_step_2 completed\",\n    \"artifactIds\": []\n  },\n  {\n    \"stepId\": \"fps_step_3\",\n    \"action\": \"fill\",\n    \"attempt\": 1,\n    \"status\": \"completed\",\n    \"startedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"completedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"durationMs\": 0,\n    \"selector\": \"#fp_name\",\n    \"inputKey\": \"full_name\",\n    \"message\": \"fill:fps_step_3 completed\",\n    \"artifactIds\": []\n  },\n  {\n    \"stepId\": \"fps_step_4\",\n    \"action\": \"select\",\n    \"attempt\": 1,\n    \"status\": \"completed\",\n    \"startedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"completedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"durationMs\": 0,\n    \"selector\": \"#fp_state\",\n    \"inputKey\": \"state\",\n    \"message\": \"select:fps_step_4 completed\",\n    \"artifactIds\": []\n  },\n  {\n    \"stepId\": \"fps_step_5\",\n    \"action\": \"click\",\n    \"attempt\": 1,\n    \"status\": \"completed\",\n    \"startedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"completedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"durationMs\": 0,\n    \"selector\": \"#search-record\",\n    \"message\": \"click:fps_step_5 completed\",\n    \"artifactIds\": []\n  },\n  {\n    \"stepId\": \"fps_step_6\",\n    \"action\": \"click\",\n    \"attempt\": 1,\n    \"status\": \"completed\",\n    \"startedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"completedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"durationMs\": 0,\n    \"selector\": \"input[name='selected-record']\",\n    \"message\": \"click:fps_step_6 completed\",\n    \"artifactIds\": []\n  },\n  {\n    \"stepId\": \"fps_step_7\",\n    \"action\": \"select\",\n    \"attempt\": 1,\n    \"status\": \"completed\",\n    \"startedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"completedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"durationMs\": 0,\n    \"selector\": \"#removal-reason\",\n    \"inputKey\": \"removal_reason\",\n    \"message\": \"select:fps_step_7 completed\",\n    \"artifactIds\": []\n  },\n  {\n    \"stepId\": \"fps_step_8\",\n    \"action\": \"click\",\n    \"attempt\": 1,\n    \"status\": \"completed\",\n    \"startedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"completedAt\": \"2026-03-13T08:58:18.652Z\",\n    \"durationMs\": 0,\n    \"selector\": \"#submit-removal\",\n    \"message\": \"click:fps_step_8 completed\",\n    \"artifactIds\": []\n  }\n]",
+                "metadata": {
+                  "step_count": 8
+                }
+              },
+              {
+                "artifactId": "fastpeoplesearch-fastpeoplesearch-run-fps-milestone-fixture-confirmation-1773392287204-handoff-final-page-text",
+                "kind": "page_text",
+                "label": "Final page text capture",
+                "createdAt": "2026-03-13T08:58:18.652Z",
+                "ref": "automation/fastpeoplesearch/fastpeoplesearch-run-fps-milestone-fixture-confirmation-1773392287204-handoff/final-page-text",
+                "contentType": "text/plain",
+                "content": "Your removal request has been received and is pending review."
+              },
+              {
+                "artifactId": "fastpeoplesearch-fastpeoplesearch-run-fps-milestone-fixture-confirmation-1773392287204-handoff-success-screenshot",
+                "kind": "screenshot",
+                "label": "Success screenshot",
+                "createdAt": "2026-03-13T08:58:18.652Z",
+                "ref": "automation/fastpeoplesearch/fastpeoplesearch-run-fps-milestone-fixture-confirmation-1773392287204-handoff/success-screenshot",
+                "contentType": "image/png",
+                "content": "ZmFzdHBlb3BsZXNlYXJjaC1taWxlc3RvbmU="
+              }
+            ],
+            "stepOutcomes": [
+              {
+                "stepId": "fps_step_1",
+                "action": "navigate",
+                "instruction": "Open the FastPeopleSearch removal page.",
+                "status": "completed",
+                "startedAt": "2026-03-13T08:58:18.652Z",
+                "completedAt": "2026-03-13T08:58:18.652Z",
+                "targetUrl": "https://www.fastpeoplesearch.com/removal",
+                "artifactIds": [],
+                "notes": "Completed on attempt 1."
+              },
+              {
+                "stepId": "fps_step_2",
+                "action": "fill",
+                "instruction": "Enter the privacy email address.",
+                "status": "completed",
+                "startedAt": "2026-03-13T08:58:18.652Z",
+                "completedAt": "2026-03-13T08:58:18.652Z",
+                "selector": "#fp_email",
+                "artifactIds": [],
+                "notes": "Completed on attempt 1."
+              },
+              {
+                "stepId": "fps_step_3",
+                "action": "fill",
+                "instruction": "Enter the full name to search for the record.",
+                "status": "completed",
+                "startedAt": "2026-03-13T08:58:18.652Z",
+                "completedAt": "2026-03-13T08:58:18.652Z",
+                "selector": "#fp_name",
+                "artifactIds": [],
+                "notes": "Completed on attempt 1."
+              },
+              {
+                "stepId": "fps_step_4",
+                "action": "select",
+                "instruction": "Select the state associated with the listing.",
+                "status": "completed",
+                "startedAt": "2026-03-13T08:58:18.652Z",
+                "completedAt": "2026-03-13T08:58:18.652Z",
+                "selector": "#fp_state",
+                "artifactIds": [],
+                "notes": "Completed on attempt 1."
+              },
+              {
+                "stepId": "fps_step_5",
+                "action": "click",
+                "instruction": "Search for the matching FastPeopleSearch record.",
+                "status": "completed",
+                "startedAt": "2026-03-13T08:58:18.652Z",
+                "completedAt": "2026-03-13T08:58:18.652Z",
+                "selector": "#search-record",
+                "artifactIds": [],
+                "notes": "Completed on attempt 1."
+              },
+              {
+                "stepId": "fps_step_6",
+                "action": "click",
+                "instruction": "Select the first matching record for removal.",
+                "status": "completed",
+                "startedAt": "2026-03-13T08:58:18.652Z",
+                "completedAt": "2026-03-13T08:58:18.652Z",
+                "selector": "input[name='selected-record']",
+                "artifactIds": [],
+                "notes": "Completed on attempt 1."
+              },
+              {
+                "stepId": "fps_step_7",
+                "action": "select",
+                "instruction": "Choose the default privacy removal reason.",
+                "status": "completed",
+                "startedAt": "2026-03-13T08:58:18.652Z",
+                "completedAt": "2026-03-13T08:58:18.652Z",
+                "selector": "#removal-reason",
+                "artifactIds": [],
+                "notes": "Completed on attempt 1."
+              },
+              {
+                "stepId": "fps_step_8",
+                "action": "click",
+                "instruction": "Submit the FastPeopleSearch removal request.",
+                "status": "completed",
+                "startedAt": "2026-03-13T08:58:18.652Z",
+                "completedAt": "2026-03-13T08:58:18.652Z",
+                "selector": "#submit-removal",
+                "artifactIds": [],
+                "notes": "Completed on attempt 1."
+              }
+            ]
+          }
+        },
+        "monitoring": {
+          "status": "awaiting_confirmation",
+          "reason": "pending_confirmation",
+          "last_scan_at": "2024-06-01T00:00:00.000Z",
+          "next_scan_at": "2024-07-01T00:00:00.000Z",
+          "cooldown_ends_at": null,
+          "reappearance_count": 0,
+          "trigger_new_removal_cycle": false,
+          "backend_required": true,
+          "notes": "Submission for FastPeopleSearch is still awaiting confirmation; schedule a follow-up check on the local monitoring cadence until backend support lands."
+        },
+        "prompt_trace": {
+          "discovery_parse": {
+            "prompt_name": "listing_classifier_extractor",
+            "prompt_version": "2026-03-13.2"
+          },
+          "retrieve_procedure": {
+            "prompt_name": "procedure_selector",
+            "prompt_version": "2026-03-13.2"
+          },
+          "draft_optout": {
+            "prompt_name": "draft_generator",
+            "prompt_version": "2026-03-13.2"
+          },
+          "interpret_result": {
+            "prompt_name": "post_execution_verifier",
+            "prompt_version": "2026-03-13.3"
+          }
+        },
+        "terminal_path": "await_confirmation",
+        "checkpoint": null
+      }
+    ],
+    "run_summary": {
+      "overall_status": "completed",
+      "partial_success": false,
+      "requested_sites": [],
+      "processed_sites": [
+        "FastPeopleSearch"
+      ],
+      "total_requested_sites": 1,
+      "total_processed_sites": 1,
+      "completed_sites": 1,
+      "pending_sites": 0,
+      "successful_sites": 1,
+      "blocked_sites": 0,
+      "manual_review_sites": 0,
+      "matched_sites": 1,
+      "no_match_sites": 0,
+      "total_retry_count": 0,
+      "monitoring": {
+        "scheduled_sites": 0,
+        "awaiting_confirmation_sites": 1,
+        "due_sites": 0,
+        "manual_review_sites": 0,
+        "new_removal_cycle_sites": 0
+      },
+      "sites_by_terminal_path": {
+        "await_confirmation": 1
+      },
+      "site_outcomes": [
+        {
+          "site": "FastPeopleSearch",
+          "terminal_path": "await_confirmation",
+          "retry_count": 0,
+          "review_blocked": false,
+          "successful": true,
+          "pending": false
+        }
+      ]
+    },
+    "orchestration_checkpoint": null
+  },
+  "dashboard": {
+    "runId": "run_fps_milestone_fixture_confirmation_1773392287204",
+    "brokerSites": [
+      {
+        "id": "fastpeoplesearch",
+        "name": "FastPeopleSearch",
+        "url": "fastpeoplesearch.com",
+        "status": "opted_out",
+        "foundData": {
+          "fields": [
+            "name",
+            "age",
+            "address",
+            "relative",
+            "relative",
+            "phone"
+          ],
+          "optOutMessage": "full_name: Jane Doe\nprivacy_email: shield-abc123@detraceme.io"
+        }
+      }
+    ],
+    "history": [
+      {
+        "id": "run_fps_milestone_fixture_confirmation_1773392287204",
+        "date": "2026-03-13",
+        "site": "FastPeopleSearch",
+        "action": "Demo run completed with pending status via fixture_confirmation.",
+        "status": "confirmed"
+      }
+    ],
+    "chatMessages": [
+      {
+        "id": "demo_run_fps_milestone_fixture_confirmation_1773392287204",
+        "role": "assistant",
+        "content": "Live LLM workflow completed for FastPeopleSearch. The local success path reached pending and is awaiting confirmation.",
+        "timestamp": "2026-03-13T08:58:38.174Z"
+      }
+    ]
+  }
+}

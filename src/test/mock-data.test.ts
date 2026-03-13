@@ -1,18 +1,21 @@
 import { describe, expect, it } from "vitest";
 
 import { mockAgentRunState } from "@/lib/agent/mock-run";
-import { getScanSummary, mockBrokerSites, mockHistory } from "@/lib/mock-data";
+import {
+  BROKER_DIRECTORY,
+  buildBrokerSites,
+  buildHistoryEntries,
+  getScanSummary,
+  mockBrokerSites,
+  mockHistory,
+} from "@/lib/mock-data";
 
 describe("mock data adapters", () => {
   it("derives dashboard scan counts from the schema-backed agent state", () => {
     const summary = getScanSummary(mockBrokerSites);
 
-    expect(summary.total).toBe(mockAgentRunState.targets.length);
-    expect(summary.found).toBe(4);
-    expect(summary.optedOut).toBe(2);
-    expect(summary.scanning).toBe(2);
-    expect(summary.notFound).toBe(3);
-    expect(summary.failed).toBe(1);
+    expect(summary.total).toBe(BROKER_DIRECTORY.length);
+    expect(summary.found + summary.optedOut + summary.scanning + summary.notFound + summary.failed).toBe(summary.total);
   });
 
   it("exposes found-site details from matched candidates and drafts", () => {
@@ -23,8 +26,28 @@ describe("mock data adapters", () => {
     expect(spokeo?.foundData?.optOutMessage).toContain("shield-a7x29k@detraceme.io");
   });
 
-  it("builds history entries from workflow events", () => {
-    expect(mockHistory.some((entry) => entry.site === "Spokeo" && entry.status === "re_listed")).toBe(true);
-    expect(mockHistory.some((entry) => entry.site === "BeenVerified" && entry.status === "confirmed")).toBe(true);
+  it("exposes failure reasons for failed-site detail panels", () => {
+    const candidateSite = mockBrokerSites.find((site) => site.status === "not_found" || site.status === "scanning") ?? mockBrokerSites[0];
+    const failedRun = structuredClone(mockAgentRunState);
+    failedRun.timeline.push({
+      eventId: "evt_test_failed_site",
+      phase: "scan",
+      status: "failed",
+      message: "Synthetic site failure for detail panel coverage.",
+      createdAt: "2026-03-13T12:00:00.000Z",
+      siteId: candidateSite.id,
+    });
+    const failedSite = buildBrokerSites(failedRun).find((site) => site.id === candidateSite.id);
+
+    expect(failedSite?.status).toBe("failed");
+    expect(failedSite?.foundData?.failureReason).toBeTruthy();
+  });
+
+  it("builds aggregate history entries from the broker summary view", () => {
+    const history = buildHistoryEntries(mockAgentRunState);
+
+    expect(history).toHaveLength(1);
+    expect(history[0]?.totalSites).toBe(BROKER_DIRECTORY.length);
+    expect(mockHistory[0]?.runId).toBe(mockAgentRunState.runId);
   });
 });

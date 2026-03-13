@@ -241,6 +241,31 @@ export const procedureStepSchema = z.object({
 export const procedureSourceChunkSchema = z.object({
   doc_id: z.string().min(1),
   quote: z.string().min(1),
+  source_id: z.string().min(1).optional(),
+  source_updated_at: z.string().datetime().nullable().optional(),
+  retrieved_at: z.string().datetime().nullable().optional(),
+}).transform((value) => ({
+  ...value,
+  source_id: value.source_id ?? value.doc_id,
+  source_updated_at: value.source_updated_at ?? null,
+  retrieved_at: value.retrieved_at ?? null,
+}));
+
+export const pageContentArtifactMetadataSchema = z.object({
+  title: z.string().min(1).optional(),
+  description: z.string().min(1).optional(),
+  canonical_url: z.string().url().optional(),
+  content_type: z.string().min(1).optional(),
+  page_category: z.string().min(1).optional(),
+  captured_at: z.string().datetime().optional(),
+  headings: z.array(z.string().min(1)).default([]),
+});
+
+export const pageContentArtifactSchema = z.object({
+  visible_text: z.string().min(1),
+  url: z.string().url(),
+  screenshot_ref: z.string().min(1).nullable().optional(),
+  extracted_metadata: pageContentArtifactMetadataSchema.optional(),
 });
 
 export const procedureRetrievalSchema = z.object({
@@ -468,9 +493,72 @@ export const executionOutcomeSchema = z.object({
   reviewReasons: z.array(reviewReasonSchema).default([]),
 });
 
+export const monitoredTargetStatusSchema = z.enum([
+  "scheduled",
+  "awaiting_confirmation",
+  "rescan_due",
+  "manual_review",
+  "archived",
+]);
+
+export const monitoredTargetSetStatusSchema = z.enum([
+  "active",
+  "needs_attention",
+  "archived",
+]);
+
+export const monitoredTargetSchema = z.object({
+  targetId: z.string().min(1),
+  siteId: z.string().min(1),
+  siteName: z.string().min(1),
+  sourceRunId: z.string().min(1),
+  sourceSiteRunId: z.string().min(1),
+  candidateId: z.string().min(1).nullable(),
+  candidateUrl: z.string().url().nullable(),
+  lastScanAt: z.string().datetime(),
+  nextScanAt: z.string().datetime().nullable(),
+  cooldownEndsAt: z.string().datetime().nullable(),
+  monitoringStatus: monitoredTargetStatusSchema,
+  reviewReasons: z.array(reviewReasonSchema).default([]),
+  triggerNewRemovalCycle: z.boolean().default(false),
+  reappearanceCount: z.number().int().min(0).default(0),
+  latestOutcome: executionOutcomeSchema.pick({
+    status: true,
+    confirmationId: true,
+    observedAt: true,
+    reviewReasons: true,
+  }).nullable(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export const monitoredTargetSetSchema = z.object({
+  targetSetId: z.string().min(1),
+  sourceRunId: z.string().min(1),
+  profileId: z.string().min(1),
+  profileName: z.string().min(1),
+  status: monitoredTargetSetStatusSchema,
+  monitoringPolicy: z.object({
+    cadenceDays: z.number().int().min(1),
+    reReviewCooldownDays: z.number().int().min(0),
+    reReviewListingReappearanceThreshold: z.number().int().min(1),
+  }),
+  targetCount: z.number().int().min(0),
+  activeTargetCount: z.number().int().min(0),
+  needsAttentionCount: z.number().int().min(0),
+  targets: z.array(monitoredTargetSchema).default([]),
+  materializedFromRunAt: z.string().datetime(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+  storageBacked: z.boolean().default(false),
+});
+
 export const defaultAgentPolicy = {
   match_confidence_threshold: 0.75,
   max_submission_retries: 1,
+  monitoring_cadence_days: 30,
+  re_review_cooldown_days: 30,
+  re_review_listing_reappearance_threshold: 1,
   require_explicit_consent: true,
   minimize_pii: true,
   require_retrieval_grounding: true,
@@ -485,6 +573,10 @@ export const defaultAgentPolicy = {
 export const agentPolicySchema = z.object({
   match_confidence_threshold: z.number().min(0).max(1).default(defaultAgentPolicy.match_confidence_threshold),
   max_submission_retries: z.number().int().min(0).default(defaultAgentPolicy.max_submission_retries),
+  monitoring_cadence_days: z.number().int().min(1).default(defaultAgentPolicy.monitoring_cadence_days),
+  re_review_cooldown_days: z.number().int().min(0).default(defaultAgentPolicy.re_review_cooldown_days),
+  re_review_listing_reappearance_threshold:
+    z.number().int().min(1).default(defaultAgentPolicy.re_review_listing_reappearance_threshold),
   require_explicit_consent: z.boolean().default(defaultAgentPolicy.require_explicit_consent),
   minimize_pii: z.boolean().default(defaultAgentPolicy.minimize_pii),
   require_retrieval_grounding: z.boolean().default(defaultAgentPolicy.require_retrieval_grounding),
@@ -554,6 +646,8 @@ export type ProcedureInputRequirement = z.infer<typeof procedureInputRequirement
 export type ProcedureStep = z.infer<typeof procedureStepSchema>;
 export type ProcedureSourceChunk = z.infer<typeof procedureSourceChunkSchema>;
 export type ProcedureRetrieval = z.infer<typeof procedureRetrievalSchema>;
+export type PageContentArtifactMetadata = z.infer<typeof pageContentArtifactMetadataSchema>;
+export type PageContentArtifact = z.infer<typeof pageContentArtifactSchema>;
 export type ProcedureSelection = z.infer<typeof procedureSelectionSchema>;
 export type OptOutDraft = z.infer<typeof optOutDraftSchema>;
 export type SubmissionEmail = z.infer<typeof submissionEmailSchema>;
@@ -568,6 +662,10 @@ export type ActionHandoff = z.infer<typeof actionHandoffSchema>;
 export type ExecutionResult = z.infer<typeof executionResultSchema>;
 export type WorkflowEvent = z.infer<typeof workflowEventSchema>;
 export type ExecutionOutcome = z.infer<typeof executionOutcomeSchema>;
+export type MonitoredTargetStatus = z.infer<typeof monitoredTargetStatusSchema>;
+export type MonitoredTargetSetStatus = z.infer<typeof monitoredTargetSetStatusSchema>;
+export type MonitoredTarget = z.infer<typeof monitoredTargetSchema>;
+export type MonitoredTargetSet = z.infer<typeof monitoredTargetSetSchema>;
 export type AgentPolicy = z.infer<typeof agentPolicySchema>;
 export type AgentRunState = z.infer<typeof agentRunStateSchema>;
 
