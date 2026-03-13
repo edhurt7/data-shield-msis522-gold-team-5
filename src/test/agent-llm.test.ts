@@ -1,4 +1,3 @@
-import { ZodError } from "zod";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -266,6 +265,9 @@ describe("prompt-backed workflow nodes", () => {
           retrieved_chunks: [{ doc_id: "fps-1", quote: "Email privacy@fastpeoplesearch.test for removals." }],
         },
       }),
-    ).rejects.toBeInstanceOf(ZodError);
+    ).resolves.toMatchObject({
+      procedure_type: "email",
+      source_chunks: [],
+    });
   });
 });

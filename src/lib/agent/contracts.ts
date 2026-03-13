@@ -70,6 +70,21 @@ export const executionModeSchema = z.enum([
   "blocked",
 ]);
 
+export const reviewEscalationStrategySchema = z.enum([
+  "block",
+  "allow_with_review",
+]);
+
+export const confirmationHandlingStrategySchema = z.enum([
+  "await_confirmation",
+  "request_user_review",
+]);
+
+export const failureHandlingStrategySchema = z.enum([
+  "retry",
+  "request_user_review",
+]);
+
 export const procedureSourceSchema = z.enum([
   "rag",
   "manual",
@@ -234,14 +249,6 @@ export const procedureRetrievalSchema = z.object({
   required_fields: z.array(z.string().min(1)).default([]),
   steps: z.array(z.string().min(1)).default([]),
   source_chunks: z.array(procedureSourceChunkSchema).default([]),
-}).superRefine((value, ctx) => {
-  if (value.procedure_type !== "procedure_unknown" && value.source_chunks.length === 0) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Known procedures must cite retrieved source chunks.",
-      path: ["source_chunks"],
-    });
-  }
 });
 
 export const procedureSelectionSchema = z.object({
@@ -396,13 +403,43 @@ export const executionOutcomeSchema = z.object({
   reviewReasons: z.array(reviewReasonSchema).default([]),
 });
 
+export const defaultAgentPolicy = {
+  match_confidence_threshold: 0.75,
+  max_submission_retries: 1,
+  require_explicit_consent: true,
+  minimize_pii: true,
+  require_retrieval_grounding: true,
+  low_confidence_match_strategy: "block",
+  stale_procedure_strategy: "block",
+  contradictory_procedure_strategy: "block",
+  pending_confirmation_strategy: "await_confirmation",
+  captcha_failure_strategy: "request_user_review",
+  manual_requirement_strategy: "request_user_review",
+} as const;
+
 export const agentPolicySchema = z.object({
-  match_confidence_threshold: z.number().min(0).max(1).default(0.75),
-  max_submission_retries: z.number().int().min(0).default(1),
-  require_explicit_consent: z.boolean().default(true),
-  minimize_pii: z.boolean().default(true),
-  require_retrieval_grounding: z.boolean().default(true),
+  match_confidence_threshold: z.number().min(0).max(1).default(defaultAgentPolicy.match_confidence_threshold),
+  max_submission_retries: z.number().int().min(0).default(defaultAgentPolicy.max_submission_retries),
+  require_explicit_consent: z.boolean().default(defaultAgentPolicy.require_explicit_consent),
+  minimize_pii: z.boolean().default(defaultAgentPolicy.minimize_pii),
+  require_retrieval_grounding: z.boolean().default(defaultAgentPolicy.require_retrieval_grounding),
+  low_confidence_match_strategy: reviewEscalationStrategySchema.default(defaultAgentPolicy.low_confidence_match_strategy),
+  stale_procedure_strategy: reviewEscalationStrategySchema.default(defaultAgentPolicy.stale_procedure_strategy),
+  contradictory_procedure_strategy: reviewEscalationStrategySchema.default(defaultAgentPolicy.contradictory_procedure_strategy),
+  pending_confirmation_strategy:
+    confirmationHandlingStrategySchema.default(defaultAgentPolicy.pending_confirmation_strategy),
+  captcha_failure_strategy: failureHandlingStrategySchema.default(defaultAgentPolicy.captcha_failure_strategy),
+  manual_requirement_strategy: failureHandlingStrategySchema.default(defaultAgentPolicy.manual_requirement_strategy),
 });
+
+export const agentPolicyOverrideSchema = agentPolicySchema.partial();
+
+export function resolveAgentPolicy(overrides: Partial<AgentPolicy> = {}, defaults: AgentPolicy = defaultAgentPolicy) {
+  return agentPolicySchema.parse({
+    ...defaults,
+    ...overrides,
+  });
+}
 
 export const agentRunStateSchema = z.object({
   runId: z.string().min(1),
@@ -432,6 +469,9 @@ export type ProcedureType = z.infer<typeof procedureTypeSchema>;
 export type IntentAction = z.infer<typeof intentActionSchema>;
 export type MatchDecisionLabel = z.infer<typeof matchDecisionLabelSchema>;
 export type ExecutionMode = z.infer<typeof executionModeSchema>;
+export type ReviewEscalationStrategy = z.infer<typeof reviewEscalationStrategySchema>;
+export type ConfirmationHandlingStrategy = z.infer<typeof confirmationHandlingStrategySchema>;
+export type FailureHandlingStrategy = z.infer<typeof failureHandlingStrategySchema>;
 export type ProcedureSource = z.infer<typeof procedureSourceSchema>;
 export type ProcedureStepAction = z.infer<typeof procedureStepActionSchema>;
 export type ExtractedField = z.infer<typeof extractedFieldSchema>;

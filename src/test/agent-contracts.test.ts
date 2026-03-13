@@ -4,11 +4,13 @@ import {
   actionHandoffSchema,
   agentRunStateSchema,
   canTransitionPhase,
+  defaultAgentPolicy,
   discoveryResultSchema,
   executionResultSchema,
   phaseTransitions,
   procedureRetrievalSchema,
   procedureSelectionSchema,
+  resolveAgentPolicy,
   seedProfileSchema,
   submissionPayloadSchema,
 } from "@/lib/agent";
@@ -59,7 +61,7 @@ describe("agent contracts", () => {
     expect(result.success).toBe(true);
   });
 
-  it("requires retrieved source chunks when a procedure is known", () => {
+  it("accepts known procedures without source chunks so workflow policy can gate grounding", () => {
     const result = procedureRetrievalSchema.safeParse({
       site: "FastPeopleSearch",
       procedure_type: "email",
@@ -68,7 +70,30 @@ describe("agent contracts", () => {
       source_chunks: [],
     });
 
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
+  });
+
+  it("resolves the production default policy when no override is provided", () => {
+    expect(resolveAgentPolicy()).toEqual(defaultAgentPolicy);
+  });
+
+  it("applies per-run policy overrides without mutating the shared defaults", () => {
+    const resolved = resolveAgentPolicy({
+      match_confidence_threshold: 0.6,
+      minimize_pii: false,
+      low_confidence_match_strategy: "allow_with_review",
+    });
+
+    expect(resolved).toMatchObject({
+      match_confidence_threshold: 0.6,
+      minimize_pii: false,
+      low_confidence_match_strategy: "allow_with_review",
+    });
+    expect(defaultAgentPolicy).toMatchObject({
+      match_confidence_threshold: 0.75,
+      minimize_pii: true,
+      low_confidence_match_strategy: "block",
+    });
   });
 
   it("enforces email and webform payload requirements", () => {

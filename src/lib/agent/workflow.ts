@@ -29,6 +29,7 @@ import { graphContextSchema, planSubmissionOutputSchema, type GraphContext } fro
 import {
   createDefaultProcedureRetriever,
   reviewReasonsForProcedureResolution,
+  type ProcedureResolutionStatus,
   type ProcedureRetriever,
 } from "@/lib/agent/retrieval";
 
@@ -38,6 +39,7 @@ const workflowSiteInputSchema = z.object({
   page_url: z.string().url(),
   retrieved_chunks: z.array(procedureSourceChunkSchema).default([]),
   execution_result: executionResultSchema.optional(),
+  retry_count: z.number().int().min(0).default(0),
 });
 
 export const workflowRunInputSchema = z.object({
@@ -330,6 +332,14 @@ function buildDraftFacts(seedProfile: SeedProfile, requiredFields: string[]) {
     .filter(Boolean);
 }
 
+function buildAdditionalDraftFacts(seedProfile: SeedProfile) {
+  return [
+    seedProfile.approx_age ? `Approximate age: ${seedProfile.approx_age}` : "",
+    seedProfile.optional.phone_last4 ? `Phone last four: ${seedProfile.optional.phone_last4}` : "",
+    `Location: ${seedProfile.location.city}, ${seedProfile.location.state}`,
+  ].filter(Boolean);
+}
+
 function hasActionableProcedure(procedureType: "email" | "webform" | "procedure_unknown", requiredFields: string[]) {
   return procedureType !== "procedure_unknown" && requiredFields.length > 0;
 }
@@ -355,13 +365,25 @@ function hasCaptchaOrManualSignal(executionResult: ExecutionResult) {
   return /captcha|manual review|required|human verification/.test(combinedText);
 }
 
+function shouldBlockOnProcedureResolution(status: ProcedureResolutionStatus, context: GraphContext) {
+  if (status === "stale") {
+    return context.policy.stale_procedure_strategy === "block";
+  }
+  if (status === "contradictory") {
+    return context.policy.contradictory_procedure_strategy === "block";
+  }
+  return status !== "found";
+}
+
 function createDefaultNodes(): AgentWorkflowNodes {
   return {
-    validateConsent(input) {
+    validateConsent(input, context) {
       return {
         seed_profile: input.seed_profile,
         normalized_query: buildQuery(input.seed_profile),
-        approved_for_submission: input.seed_profile.consent,
+        approved_for_submission: context.policy.require_explicit_consent
+          ? input.seed_profile.consent
+          : true,
       };
     },
 
@@ -416,12 +438,13 @@ function createDefaultNodes(): AgentWorkflowNodes {
       };
     },
 
-    draftOptOut(input) {
+    draftOptOut(input, context) {
       const { seed_profile, candidate_url, procedure, site } = input;
 
       if (procedure.procedure_type === "email") {
         const destination = inferDestinationEmail(procedure.source_chunks);
         const facts = buildDraftFacts(seed_profile, procedure.required_fields);
+        const additionalFacts = context.policy.minimize_pii ? [] : buildAdditionalDraftFacts(seed_profile);
 
         return {
           site,
@@ -433,6 +456,7 @@ function createDefaultNodes(): AgentWorkflowNodes {
             body: [
               `Please remove the listing associated with ${seed_profile.full_name}.`,
               ...facts,
+              ...additionalFacts,
             ].join("\n"),
           },
         };
@@ -459,6 +483,9 @@ function createDefaultNodes(): AgentWorkflowNodes {
       if (input.procedure.procedure_type === "procedure_unknown") {
         reviewReasons.push("procedure_unknown");
       }
+      if (context.policy.require_retrieval_grounding && input.procedure.source_chunks.length === 0) {
+        reviewReasons.push("procedure_unknown");
+      }
       if (!topCandidate || topCandidate.match_confidence < context.policy.match_confidence_threshold) {
         reviewReasons.push("low_confidence_match");
       }
@@ -477,7 +504,7 @@ function createDefaultNodes(): AgentWorkflowNodes {
       if (captchaOrManual) {
         return {
           next_status: "manual_required",
-          next_action: "request_user_review",
+          next_action: context.policy.captcha_failure_strategy,
           review_reasons: unique([...reviewReasons, "captcha"]),
         };
       }
@@ -486,16 +513,24 @@ function createDefaultNodes(): AgentWorkflowNodes {
         case "manual_required":
           return {
             next_status: "manual_required",
-            next_action: "request_user_review",
+            next_action: context.policy.manual_requirement_strategy,
             review_reasons: unique(reviewReasons.length > 0 ? reviewReasons : ["manual_submission_required"]),
           };
         case "pending":
           return {
             next_status: "pending",
-            next_action: "await_confirmation",
+            next_action: context.policy.pending_confirmation_strategy,
             review_reasons: unique(reviewReasons),
           };
         case "failed":
+          if (input.retry_count >= context.policy.max_submission_retries) {
+            return {
+              next_status: "failed",
+              next_action: "request_user_review",
+              review_reasons: unique([...reviewReasons, "manual_submission_required"]),
+            };
+          }
+
           return {
             next_status: "failed",
             next_action: "retry",
@@ -505,7 +540,7 @@ function createDefaultNodes(): AgentWorkflowNodes {
           if (!hasClearExecutionEvidence(input.execution_result)) {
             return {
               next_status: "pending",
-              next_action: "await_confirmation",
+              next_action: context.policy.pending_confirmation_strategy,
               review_reasons: unique(reviewReasons),
             };
           }
@@ -547,6 +582,7 @@ export function createAgentWorkflow(options: AgentWorkflowOptions = {}) {
         },
         context,
       );
+      const submissionApproved = !context.policy.require_explicit_consent || validateConsent.approved_for_submission;
 
       const discoveryParse = await nodes.discoveryParse(
         {
@@ -566,6 +602,7 @@ export function createAgentWorkflow(options: AgentWorkflowOptions = {}) {
 
       const topCandidate = discoveryParse.candidates[0];
       const confidenceBelowThreshold = !topCandidate || topCandidate.match_confidence < context.policy.match_confidence_threshold;
+      const blockOnLowConfidence = confidenceBelowThreshold && context.policy.low_confidence_match_strategy === "block";
       if (confidenceBelowThreshold) {
         context.review_reasons = unique([...context.review_reasons, "low_confidence_match"]);
       }
@@ -578,7 +615,7 @@ export function createAgentWorkflow(options: AgentWorkflowOptions = {}) {
         context.review_reasons,
       );
 
-      if (discoveryParse.found && topCandidate && !confidenceBelowThreshold) {
+      if (discoveryParse.found && topCandidate && !blockOnLowConfidence) {
         const procedureResolution = await procedureRetriever(
           {
             seed_profile: parsedInput.seed_profile,
@@ -599,19 +636,23 @@ export function createAgentWorkflow(options: AgentWorkflowOptions = {}) {
           ]);
         }
 
+        const shouldBlockProcedure = shouldBlockOnProcedureResolution(procedureResolution.status, context);
         retrieveProcedure = await nodes.retrieveProcedure(
           {
             seed_profile: parsedInput.seed_profile,
             discovery_result: discoveryParse,
             site: parsedInput.site_input.site,
-            retrieved_chunks: procedureResolution.status === "found" ? procedureResolution.chunks : [],
+            retrieved_chunks: shouldBlockProcedure ? [] : procedureResolution.chunks,
           },
           context,
         );
 
-        if (retrieveProcedure.procedure_type === "procedure_unknown") {
+        const hasGroundedProcedure = retrieveProcedure.procedure_type !== "procedure_unknown"
+          && (!context.policy.require_retrieval_grounding || retrieveProcedure.source_chunks.length > 0);
+
+        if (!hasGroundedProcedure) {
           context.review_reasons = unique([...context.review_reasons, "procedure_unknown"]);
-        } else if (validateConsent.approved_for_submission && procedureResolution.status === "found") {
+        } else if (submissionApproved) {
           draftOptOut = await nodes.draftOptOut(
             {
               seed_profile: parsedInput.seed_profile,
@@ -643,6 +684,7 @@ export function createAgentWorkflow(options: AgentWorkflowOptions = {}) {
           {
             execution_result: parsedInput.site_input.execution_result as ExecutionResult,
             prior_review_reasons: context.review_reasons,
+            retry_count: parsedInput.site_input.retry_count,
           },
           context,
         );
