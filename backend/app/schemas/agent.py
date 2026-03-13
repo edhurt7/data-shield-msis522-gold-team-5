@@ -201,6 +201,9 @@ class PlanSubmissionResponse(BaseModel):
 class ProcedureChunkRead(BaseModel):
     doc_id: str
     quote: str
+    relevance_score: float | None = None
+    matched_terms: list[str] = Field(default_factory=list)
+    embedding_score: float | None = None
 
 
 class ProcedureRecordRead(BaseModel):
@@ -209,6 +212,11 @@ class ProcedureRecordRead(BaseModel):
     updated_at: datetime
     channel_hint: Literal["email", "webform", "unknown"]
     source_chunks: list[ProcedureChunkRead]
+    score: float | None = None
+    lexical_score: float | None = None
+    embedding_score: float | None = None
+    freshness_days: int | None = None
+    summary: str | None = None
 
 
 class ProcedureRetrievalRequest(BaseModel):
@@ -223,6 +231,77 @@ class ProcedureRetrievalResponse(BaseModel):
     site: str
     retrieved_at: datetime
     procedures: list[ProcedureRecordRead] = Field(default_factory=list)
+
+
+class ProcedureIngestRequest(BaseModel):
+    procedure_id: str | None = None
+    site: str
+    channel_hint: Literal["email", "webform", "unknown"] = "unknown"
+    source_uri: str = ""
+    version: str = "v1"
+    summary: str | None = None
+    raw_text: str
+    chunk_size: int = 280
+    overlap: int = 40
+    is_active: bool = True
+    regenerate_embeddings: bool = True
+
+
+class ProcedureIngestResponse(BaseModel):
+    procedure_id: str
+    site: str
+    chunk_count: int
+    version: str
+    updated_at: datetime
+    embedding_provider: str
+    embedding_model: str
+
+
+class ProcedureSearchRequest(BaseModel):
+    site: str
+    query: str
+    limit: int = 5
+
+
+class ProcedureSearchResponse(BaseModel):
+    site: str
+    query: str
+    retrieved_at: datetime
+    procedures: list[ProcedureRecordRead] = Field(default_factory=list)
+
+
+class RemovalStatusEventRead(BaseModel):
+    id: str
+    status: str
+    message: str
+    ticket_ids: list[str] = Field(default_factory=list)
+    screenshot_ref: str | None = None
+    error_text: str | None = None
+    confirmation_text: str | None = None
+    created_at: datetime
+
+
+class RemovalRequestRead(BaseModel):
+    id: str
+    run_id: str
+    site_id: str
+    candidate_id: str
+    candidate_url: str
+    procedure_id: str | None = None
+    submission_channel: str
+    status: str
+    latest_ticket_id: str | None = None
+    latest_confirmation_text: str | None = None
+    latest_error_text: str | None = None
+    review_reasons: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime
+    updated_at: datetime
+    events: list[RemovalStatusEventRead] = Field(default_factory=list)
+
+
+class ListRemovalRequestsResponse(BaseModel):
+    removals: list[RemovalRequestRead] = Field(default_factory=list)
 
 
 class ApiError(BaseModel):

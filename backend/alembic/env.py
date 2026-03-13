@@ -7,7 +7,17 @@ from sqlalchemy import engine_from_config, pool
 
 from app.core.config import get_settings
 from app.db.base import Base
-from app.models import AgentRun, ChatMessage, ProcedureChunk, ProcedureDocument, Profile, WorkflowEvent
+from app.models import (
+    AgentRun,
+    ChatMessage,
+    ProcedureChunk,
+    ProcedureChunkEmbedding,
+    ProcedureDocument,
+    Profile,
+    RemovalRequest,
+    RemovalStatusEvent,
+    WorkflowEvent,
+)
 
 
 config = context.config

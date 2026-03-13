@@ -65,6 +65,11 @@ class AgentRun(Base):
         cascade="all, delete-orphan",
         order_by="ChatMessage.created_at",
     )
+    removal_requests: Mapped[list["RemovalRequest"]] = relationship(
+        back_populates="run",
+        cascade="all, delete-orphan",
+        order_by="RemovalRequest.created_at",
+    )
 
 
 class WorkflowEvent(Base):
@@ -93,3 +98,46 @@ class ChatMessage(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     run: Mapped[AgentRun] = relationship(back_populates="chat_messages")
+
+
+class RemovalRequest(Base):
+    __tablename__ = "removal_requests"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=lambda: f"removal_{uuid4().hex}")
+    run_id: Mapped[str] = mapped_column(ForeignKey("agent_runs.id"), index=True)
+    site_id: Mapped[str] = mapped_column(String(120), index=True)
+    candidate_id: Mapped[str] = mapped_column(String(255))
+    candidate_url: Mapped[str] = mapped_column(Text)
+    procedure_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    submission_channel: Mapped[str] = mapped_column(String(32), default="webform")
+    status: Mapped[str] = mapped_column(String(64), default="planned")
+    latest_ticket_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    latest_confirmation_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    latest_error_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    review_reasons: Mapped[list[str]] = mapped_column(JSON, default=list)
+    request_metadata: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+    run: Mapped[AgentRun] = relationship(back_populates="removal_requests")
+    status_events: Mapped[list["RemovalStatusEvent"]] = relationship(
+        back_populates="removal_request",
+        cascade="all, delete-orphan",
+        order_by="RemovalStatusEvent.created_at",
+    )
+
+
+class RemovalStatusEvent(Base):
+    __tablename__ = "removal_status_events"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=lambda: f"rem_evt_{uuid4().hex}")
+    removal_request_id: Mapped[str] = mapped_column(ForeignKey("removal_requests.id"), index=True)
+    status: Mapped[str] = mapped_column(String(64))
+    message: Mapped[str] = mapped_column(Text)
+    ticket_ids: Mapped[list[str]] = mapped_column(JSON, default=list)
+    screenshot_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    confirmation_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    removal_request: Mapped[RemovalRequest] = relationship(back_populates="status_events")

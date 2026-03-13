@@ -8,7 +8,17 @@ from app.core.config import get_settings
 from app.db.base import Base
 from app.db.init_data import seed_builtin_procedures
 from app.db.session import SessionLocal, engine
-from app.models import AgentRun, ChatMessage, ProcedureChunk, ProcedureDocument, Profile, WorkflowEvent
+from app.models import (
+    AgentRun,
+    ChatMessage,
+    ProcedureChunk,
+    ProcedureChunkEmbedding,
+    ProcedureDocument,
+    Profile,
+    RemovalRequest,
+    RemovalStatusEvent,
+    WorkflowEvent,
+)
 
 
 settings = get_settings()

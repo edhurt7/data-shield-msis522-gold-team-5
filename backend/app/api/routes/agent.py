@@ -6,6 +6,7 @@ from app.schemas.agent import (
     AppendExecutionResultRequest,
     AppendExecutionResultResponse,
     GetRunResponse,
+    ListRemovalRequestsResponse,
     ListChatMessagesResponse,
     ListRunsResponse,
     PlanSubmissionRequest,
@@ -22,13 +23,15 @@ from app.schemas.agent import (
 from app.services.run_service import (
     build_chat_message,
     build_run_state,
+    list_removal_requests,
     list_chat_messages,
     create_run,
     get_run,
     handle_chat_command,
     list_runs,
-    plan_submission,
     append_execution_result,
+    plan_submission,
+    process_run_workflow,
     submit_approval,
     trigger_rescan,
 )
@@ -44,9 +47,10 @@ def get_runs(db: Session = Depends(get_db)) -> ListRunsResponse:
 
 @router.post("/runs/start", response_model=StartAgentRunResponse, status_code=status.HTTP_201_CREATED)
 def start_run(payload: StartAgentRunRequest, db: Session = Depends(get_db)) -> StartAgentRunResponse:
-    run, _events = create_run(db, payload)
+    run, events = create_run(db, payload)
+    events.extend(process_run_workflow(db, run))
     state = build_run_state(run)
-    return StartAgentRunResponse(run=state, events=state.timeline[-1:])
+    return StartAgentRunResponse(run=state, events=[event for event in state.timeline if event.eventId in {item.id for item in events}])
 
 
 @router.get("/runs/{run_id}", response_model=GetRunResponse)
@@ -63,6 +67,14 @@ def get_run_messages(run_id: str, db: Session = Depends(get_db)) -> ListChatMess
     if not run:
         raise HTTPException(status_code=404, detail="Run not found.")
     return list_chat_messages(run)
+
+
+@router.get("/runs/{run_id}/removals", response_model=ListRemovalRequestsResponse)
+def get_run_removals(run_id: str, db: Session = Depends(get_db)) -> ListRemovalRequestsResponse:
+    run = get_run(db, run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found.")
+    return list_removal_requests(db, run_id)
 
 
 @router.post("/runs/{run_id}/chat", response_model=SendChatCommandResponse)
@@ -110,11 +122,12 @@ def rescan_run(
     run = get_run(db, run_id)
     if not run:
         raise HTTPException(status_code=404, detail="Run not found.")
-    trigger_rescan(db, run, payload.reason)
+    events = trigger_rescan(db, run, payload.reason)
+    events.extend(process_run_workflow(db, run, reset_state=True))
     refreshed = get_run(db, run_id)
     assert refreshed is not None
     state = build_run_state(refreshed)
-    return TriggerRescanResponse(run=state, events=state.timeline[-1:])
+    return TriggerRescanResponse(run=state, events=[event for event in state.timeline if event.eventId in {item.id for item in events}])
 
 
 @router.post("/runs/{run_id}/execution-results", response_model=AppendExecutionResultResponse)

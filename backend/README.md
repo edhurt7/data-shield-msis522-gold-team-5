@@ -17,6 +17,8 @@ This directory contains the first working FastAPI backend scaffold for the proje
   - `POST /api/agent/runs/{run_id}/rescan`
   - `POST /api/agent/runs/{run_id}/execution-results`
   - `POST /api/agent/runs/{run_id}/plan-submission`
+  - `POST /api/procedures/ingest`
+  - `POST /api/procedures/search`
   - `POST /api/procedures/retrieve`
 
 ## Local setup
@@ -47,4 +49,6 @@ CORS_ORIGINS=["https://your-lovable-app-domain"]
 
 - The default database is SQLite for local development speed.
 - For team/demo deployment, switch `DATABASE_URL` to Postgres.
+- Procedure retrieval now supports chunk ingestion plus lexical grounded search over stored chunks.
 - The current scaffold does not yet execute Playwright jobs or live LLM calls. It gives us a persistent API and database foundation to build those next.
+- If you want embedding-based retrieval later, the next step will be adding vector storage plus an embedding provider key such as `OPENAI_API_KEY`.

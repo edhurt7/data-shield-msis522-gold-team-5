@@ -8,6 +8,7 @@
 - Built-in procedure document seed data
 - Contract-aligned routes for agent run management and procedure retrieval
 - `.env.example` documenting the keys and service credentials needed later
+- Procedure ingestion and lexical RAG retrieval endpoints for site-specific opt-out documents
 
 ## Still to build next
 
