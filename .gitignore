@@ -23,3 +23,9 @@ dist-ssr
 *.sln
 *.sw?
 artifacts/eval-reports/
+
+# Python / backend
+__pycache__/
+*.pyc
+.venv/
+backend/data/

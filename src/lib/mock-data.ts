@@ -1,4 +1,5 @@
 import type { AgentRunState } from "@/lib/agent/contracts";
+import type { ChatMessage as ApiChatMessage } from "@/lib/agent/api";
 import { mockAgentRunState } from "@/lib/agent/mock-run";
 
 export type ScanStatus = "scanning" | "found" | "not_found" | "opted_out" | "needs_review" | "blocked" | "failed";
@@ -9,6 +10,7 @@ export interface BrokerSite {
   name: string;
   url: string;
   status: ScanStatus;
+  action?: string;
   demoMetadata?: {
     isFixtureBacked?: boolean;
     manualFallbackReady?: boolean;
@@ -35,13 +37,6 @@ export interface BrokerSite {
         description?: string;
       }>;
       recommendedNextStep?: string;
-    };
-    evidence?: {
-      finalPageText?: string;
-      htmlSnapshot?: string;
-      screenshotBase64?: string;
-      screenshotRef?: string;
-      stepLog?: string;
     };
   };
 }
@@ -94,6 +89,11 @@ function getSiteStatus(run: AgentRunState, siteId: string): ScanStatus {
     return "opted_out";
   }
 
+  const blockedEvent = run.timeline.find((event) => event.siteId === siteId && event.status === "blocked");
+  if (blockedEvent) {
+    return "blocked";
+  }
+
   const failedEvent = run.timeline.find((event) => event.siteId === siteId && event.status === "failed");
   if (failedEvent) {
     return "failed";
@@ -119,7 +119,7 @@ function getSiteStatus(run: AgentRunState, siteId: string): ScanStatus {
 function getSiteDetail(run: AgentRunState, siteId: string, status: ScanStatus) {
   const candidate = run.candidates.find((item) => item.siteId === siteId);
   const draft = run.drafts.find((item) => item.siteId === siteId);
-  const failedEvent = run.timeline.find((event) => event.siteId === siteId && event.status === "failed");
+  const failedEvent = run.timeline.find((event) => event.siteId === siteId && (event.status === "failed" || event.status === "blocked"));
 
   if (status === "failed" || status === "needs_review" || status === "blocked") {
     return {
@@ -129,8 +129,8 @@ function getSiteDetail(run: AgentRunState, siteId: string, status: ScanStatus) {
         ?? (status === "blocked"
           ? "Destination site blocked the automated browser session."
           : status === "needs_review"
-          ? "Automation needs manual review before this broker can be completed."
-          : "Scan completed with a failure or manual follow-up required."),
+            ? "Automation needs manual review before this broker can be completed."
+            : "Scan completed with a failure or manual follow-up required."),
     };
   }
 
@@ -139,7 +139,6 @@ function getSiteDetail(run: AgentRunState, siteId: string, status: ScanStatus) {
   return {
     fields: candidate.extractedFields.map((field) => field.field),
     optOutMessage: draft?.body,
-    failureReason: undefined,
   };
 }
 
@@ -149,6 +148,7 @@ export function buildBrokerSites(run: AgentRunState): BrokerSite[] {
     return {
       ...site,
       status,
+      action: run.timeline.find((event) => event.siteId === site.id)?.message ?? "No activity recorded yet.",
       foundData: status !== "not_found" && status !== "scanning" ? getSiteDetail(run, site.id, status) : undefined,
     };
   });
@@ -185,7 +185,7 @@ export function createScanHistoryEntry(input: {
   const summary = getScanSummary(brokerSites);
   const status: HistoryStatus = summary.scanning > 0
     ? "in_progress"
-    : summary.failed > 0 || summary.needsReview > 0
+    : summary.failed > 0 || summary.needsReview > 0 || summary.blocked > 0
       ? "needs_attention"
       : "completed";
 
@@ -237,6 +237,15 @@ export function buildChatMessagesFromTimeline(run: AgentRunState): ChatMessage[]
       content: event.message,
       timestamp: event.createdAt,
     }));
+}
+
+export function buildChatMessagesFromApi(messages: ApiChatMessage[]): ChatMessage[] {
+  return messages.map((message) => ({
+    id: message.id,
+    role: message.role === "system" ? "assistant" : message.role,
+    content: message.content,
+    timestamp: message.createdAt,
+  }));
 }
 
 export const mockBrokerSites: BrokerSite[] = buildBrokerSites(mockAgentRunState);
