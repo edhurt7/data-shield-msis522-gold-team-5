@@ -1,10 +1,13 @@
 import { z } from "zod";
 
 import {
+  agentPolicyOverrideSchema,
   agentPolicySchema,
+  defaultAgentPolicy,
   discoveryResultSchema,
   executionResultSchema,
   procedureRetrievalSchema,
+  resolveAgentPolicy,
   reviewReasonSchema,
   seedProfileSchema,
   submissionPayloadSchema,
@@ -22,15 +25,25 @@ export const agentNodeNameSchema = z.enum([
 
 export const graphContextSchema = z.object({
   run_id: z.string().min(1),
-  policy: agentPolicySchema.default({
-    match_confidence_threshold: 0.75,
-    max_submission_retries: 1,
-    require_explicit_consent: true,
-    minimize_pii: true,
-    require_retrieval_grounding: true,
-  }),
+  policy_defaults: agentPolicySchema.default(defaultAgentPolicy),
+  policy_overrides: agentPolicyOverrideSchema.default({}),
+  policy: agentPolicySchema.optional(),
   review_reasons: z.array(reviewReasonSchema).default([]),
   events: z.array(workflowEventSchema).default([]),
+}).transform((value) => {
+  const policy_defaults = agentPolicySchema.parse(value.policy_defaults);
+  const legacyOverrides = value.policy ? agentPolicyOverrideSchema.parse(value.policy) : {};
+  const policy_overrides = agentPolicyOverrideSchema.parse({
+    ...legacyOverrides,
+    ...value.policy_overrides,
+  });
+
+  return {
+    ...value,
+    policy_defaults,
+    policy_overrides,
+    policy: resolveAgentPolicy(policy_overrides, policy_defaults),
+  };
 });
 
 export const validateConsentInputSchema = z.object({
@@ -90,6 +103,7 @@ export const planSubmissionOutputSchema = z.object({
 export const interpretResultInputSchema = z.object({
   execution_result: executionResultSchema,
   prior_review_reasons: z.array(reviewReasonSchema).default([]),
+  retry_count: z.number().int().min(0).default(0),
 });
 
 export const interpretResultOutputSchema = z.object({

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  defaultAgentPolicy,
   discoveryParseInputSchema,
+  graphContextSchema,
   draftOptOutInputSchema,
   interpretResultInputSchema,
   interpretResultOutputSchema,
@@ -11,6 +13,27 @@ import {
 } from "@/lib/agent";
 
 describe("agent graph node contracts", () => {
+  it("resolves graph context defaults and per-run overrides", () => {
+    const result = graphContextSchema.parse({
+      run_id: "run_graph_policy_001",
+      policy_overrides: {
+        max_submission_retries: 2,
+        pending_confirmation_strategy: "request_user_review",
+      },
+    });
+
+    expect(result.policy_defaults).toEqual(defaultAgentPolicy);
+    expect(result.policy_overrides).toEqual({
+      max_submission_retries: 2,
+      pending_confirmation_strategy: "request_user_review",
+    });
+    expect(result.policy).toMatchObject({
+      ...defaultAgentPolicy,
+      max_submission_retries: 2,
+      pending_confirmation_strategy: "request_user_review",
+    });
+  });
+
   it("accepts validate_consent input", () => {
     expect(
       validateConsentInputSchema.safeParse({
@@ -173,6 +196,7 @@ describe("agent graph node contracts", () => {
           error: null,
         },
         prior_review_reasons: ["captcha"],
+        retry_count: 1,
       }).success,
     ).toBe(true);
 
