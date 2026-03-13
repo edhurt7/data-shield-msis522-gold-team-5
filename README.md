@@ -71,3 +71,63 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+## Local milestone run
+
+To run the current FastPeopleSearch local milestone harness with the live LLM path:
+
+```sh
+$env:AGENT_LLM_BASE_URL="https://api.openai.com/v1"
+$env:AGENT_LLM_API_KEY="YOUR_KEY"
+$env:AGENT_LLM_MODEL="gpt-4.1-mini"
+npm run milestone:fps
+```
+
+By default this uses a fixture confirmation browser so the broker-specific workflow, handoff, automation adapter, and result interpretation complete locally without a backend. The run summary is written to `artifacts/milestones/fastpeoplesearch-latest.json`.
+
+Optional:
+
+```sh
+$env:AGENT_FPS_BROWSER_MODE="live_browser"
+npm run milestone:fps
+```
+
+`live_browser` attempts a real Playwright browser run against the site and may fail due to anti-bot controls.
+
+## Local demo recording flow
+
+If you want to drive the prototype UI for a recorded demo without a deployed backend, run two local processes:
+
+```sh
+# terminal 1
+$env:AGENT_LLM_BASE_URL="https://api.openai.com/v1"
+$env:AGENT_LLM_API_KEY="YOUR_KEY"
+$env:AGENT_LLM_MODEL="gpt-4.1-mini"
+npm run demo:server
+
+# terminal 2
+npm run dev
+```
+
+Then open the dashboard in the browser and use the `Local Demo Runner` panel:
+
+- `Run Demo Success Path`: live LLM workflow + local deterministic confirmation browser
+- `Run Live Site Attempt`: live LLM workflow + real Playwright browser attempt against FastPeopleSearch
+
+The localhost demo server listens on `http://127.0.0.1:8787` and exposes:
+
+- `POST /demo/run-fastpeoplesearch`
+- `GET /demo/run-fastpeoplesearch/latest`
+- `POST /demo/runs`
+- `GET /demo/runs/latest`
+
+`POST /demo/runs` accepts an optional JSON body:
+
+```json
+{
+  "browserMode": "fixture_confirmation",
+  "siteIds": ["spokeo", "whitepages", "truepeoplesearch", "fastpeoplesearch", "radaris"]
+}
+```
+
+If `siteIds` is omitted, the multi-site harness runs every supported demo adapter.

@@ -5,7 +5,7 @@ import { Shield, Lock, CheckCircle2, Eye, Bot, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 
 const features = [
-  { icon: Eye, title: "Auto-Detect", desc: "We scan 100+ data broker sites for your personal info" },
+  { icon: Eye, title: "Auto-Detect", desc: "We scan data broker sites for your personal info" },
   { icon: Bot, title: "AI-Powered Removal", desc: "Our agent drafts and sends opt-out requests for you" },
   { icon: Zap, title: "Ongoing Protection", desc: "Continuous monitoring keeps your data off the web" },
 ];

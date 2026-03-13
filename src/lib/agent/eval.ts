@@ -1,4 +1,4 @@
-import type { ReviewReason, WorkflowRunOutput } from "@/lib/agent";
+import type { ReviewReason, WorkflowSiteRunOutput, WorkflowTerminalPath } from "@/lib/agent";
 
 export interface GoldenPathExpectation {
   minConfidence: number;
@@ -7,6 +7,8 @@ export interface GoldenPathExpectation {
   requiredFieldNames: string[];
   nextStatus: "submitted" | "pending" | "failed" | "manual_required";
   nextAction: "none" | "retry" | "await_confirmation" | "request_user_review";
+  terminalPath?: WorkflowTerminalPath;
+  requirePromptTrace?: boolean;
 }
 
 export interface GoldenPathEvaluation {
@@ -22,6 +24,8 @@ export interface GoldenPathEvaluation {
     nextStatus: boolean;
     nextAction: boolean;
     noManualReview: boolean;
+    terminalPath: boolean;
+    promptTrace: boolean;
   };
 }
 
@@ -30,6 +34,8 @@ export interface ReviewFallbackExpectation {
   requiredReviewReasons: ReviewReason[];
   draftBlocked: boolean;
   submissionBlocked: boolean;
+  terminalPath?: WorkflowTerminalPath;
+  requireProcedurePromptBypass?: boolean;
 }
 
 export interface ReviewFallbackEvaluation {
@@ -39,6 +45,8 @@ export interface ReviewFallbackEvaluation {
     requiredReasonsPresent: boolean;
     draftBlocked: boolean;
     submissionBlocked: boolean;
+    terminalPath: boolean;
+    procedurePromptBypassed: boolean;
   };
 }
 
@@ -66,6 +74,7 @@ export interface ExecutionInterpretationExpectation {
   nextAction: "none" | "retry" | "await_confirmation" | "request_user_review";
   requiredReviewReasons?: ReviewReason[];
   forbidSubmitted?: boolean;
+  terminalPath?: WorkflowTerminalPath;
 }
 
 export interface ExecutionInterpretationEvaluation {
@@ -75,6 +84,7 @@ export interface ExecutionInterpretationEvaluation {
     nextAction: boolean;
     requiredReasonsPresent: boolean;
     failClosedOnUnclearEvidence: boolean;
+    terminalPath: boolean;
   };
 }
 
@@ -85,6 +95,8 @@ export interface FailClosedExpectation {
   draftBlocked: boolean;
   submissionBlocked: boolean;
   successNotClaimed?: boolean;
+  terminalPath?: WorkflowTerminalPath;
+  requireProcedurePromptBypass?: boolean;
 }
 
 export interface FailClosedEvaluation {
@@ -96,6 +108,27 @@ export interface FailClosedEvaluation {
     draftBlocked: boolean;
     submissionBlocked: boolean;
     successNotClaimed: boolean;
+    terminalPath: boolean;
+    procedurePromptBypassed: boolean;
+  };
+}
+
+export interface NoGroundingFallbackExpectation {
+  procedureType: "email" | "webform";
+  requiredFieldNames: string[];
+  submissionAllowed: boolean;
+  terminalPath?: WorkflowTerminalPath | null;
+}
+
+export interface NoGroundingFallbackEvaluation {
+  passed: boolean;
+  checks: {
+    fallbackProcedureRecovered: boolean;
+    requiredFieldsRecovered: boolean;
+    procedureUnknownCleared: boolean;
+    submissionAllowed: boolean;
+    procedurePromptBypassed: boolean;
+    terminalPath: boolean;
   };
 }
 
@@ -107,7 +140,7 @@ function allEmails(text: string) {
   return unique(text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) ?? []);
 }
 
-export function evaluateGoldenPath(output: WorkflowRunOutput, expected: GoldenPathExpectation): GoldenPathEvaluation {
+export function evaluateGoldenPath(output: WorkflowSiteRunOutput, expected: GoldenPathExpectation): GoldenPathEvaluation {
   const candidate = output.discovery_parse.candidates[0];
   const webformFields = output.draft_optout?.webform?.fields.map((field) => field.name) ?? [];
   const fieldEntries = output.draft_optout?.webform?.fields ?? [];
@@ -143,6 +176,15 @@ export function evaluateGoldenPath(output: WorkflowRunOutput, expected: GoldenPa
     nextStatus: output.interpret_result?.next_status === expected.nextStatus,
     nextAction: output.interpret_result?.next_action === expected.nextAction,
     noManualReview: output.plan_submission?.requires_manual_review === false,
+    terminalPath: expected.terminalPath === undefined ? true : output.terminal_path === expected.terminalPath,
+    promptTrace: expected.requirePromptTrace === undefined
+      ? true
+      : expected.requirePromptTrace
+        ? output.prompt_trace.discovery_parse !== null
+          && output.prompt_trace.retrieve_procedure !== null
+          && output.prompt_trace.draft_optout !== null
+          && output.prompt_trace.interpret_result !== null
+        : true,
   };
 
   return {
@@ -152,7 +194,7 @@ export function evaluateGoldenPath(output: WorkflowRunOutput, expected: GoldenPa
 }
 
 export function evaluateReviewFallback(
-  output: WorkflowRunOutput,
+  output: WorkflowSiteRunOutput,
   expected: ReviewFallbackExpectation,
 ): ReviewFallbackEvaluation {
   const failClosed = evaluateFailClosed(output, {
@@ -169,12 +211,14 @@ export function evaluateReviewFallback(
       requiredReasonsPresent: failClosed.checks.requiredReasonsPresent,
       draftBlocked: failClosed.checks.draftBlocked,
       submissionBlocked: failClosed.checks.submissionBlocked,
+      terminalPath: failClosed.checks.terminalPath,
+      procedurePromptBypassed: failClosed.checks.procedurePromptBypassed,
     },
   };
 }
 
 export function evaluateDraftQuality(
-  output: WorkflowRunOutput,
+  output: WorkflowSiteRunOutput,
   expected: DraftQualityExpectation,
 ): DraftQualityEvaluation {
   const draft = output.draft_optout;
@@ -226,7 +270,7 @@ export function evaluateDraftQuality(
 }
 
 export function evaluateExecutionInterpretation(
-  output: WorkflowRunOutput,
+  output: WorkflowSiteRunOutput,
   expected: ExecutionInterpretationExpectation,
 ): ExecutionInterpretationEvaluation {
   const checks = {
@@ -236,6 +280,7 @@ export function evaluateExecutionInterpretation(
       output.interpret_result?.review_reasons.includes(reason),
     ),
     failClosedOnUnclearEvidence: expected.forbidSubmitted ? output.interpret_result?.next_status !== "submitted" : true,
+    terminalPath: expected.terminalPath === undefined ? true : output.terminal_path === expected.terminalPath,
   };
 
   return {
@@ -245,7 +290,7 @@ export function evaluateExecutionInterpretation(
 }
 
 export function evaluateFailClosed(
-  output: WorkflowRunOutput,
+  output: WorkflowSiteRunOutput,
   expected: FailClosedExpectation,
 ): FailClosedEvaluation {
   const candidate = output.discovery_parse.candidates[0];
@@ -261,6 +306,32 @@ export function evaluateFailClosed(
     draftBlocked: expected.draftBlocked ? output.draft_optout === null : output.draft_optout !== null,
     submissionBlocked: expected.submissionBlocked ? output.plan_submission === null : output.plan_submission !== null,
     successNotClaimed: expected.successNotClaimed ? output.interpret_result?.next_status !== "submitted" : true,
+    terminalPath: expected.terminalPath === undefined ? true : output.terminal_path === expected.terminalPath,
+    procedurePromptBypassed: expected.requireProcedurePromptBypass === undefined
+      ? true
+      : expected.requireProcedurePromptBypass
+        ? output.prompt_trace.retrieve_procedure === null
+        : output.prompt_trace.retrieve_procedure !== null,
+  };
+
+  return {
+    passed: Object.values(checks).every(Boolean),
+    checks,
+  };
+}
+
+export function evaluateNoGroundingFallback(
+  output: WorkflowSiteRunOutput,
+  expected: NoGroundingFallbackExpectation,
+): NoGroundingFallbackEvaluation {
+  const requiredFields = output.retrieve_procedure?.required_fields ?? [];
+  const checks = {
+    fallbackProcedureRecovered: output.retrieve_procedure?.procedure_type === expected.procedureType,
+    requiredFieldsRecovered: expected.requiredFieldNames.every((field) => requiredFields.includes(field)),
+    procedureUnknownCleared: !output.context.review_reasons.includes("procedure_unknown"),
+    submissionAllowed: expected.submissionAllowed ? output.plan_submission !== null : output.plan_submission === null,
+    procedurePromptBypassed: output.prompt_trace.retrieve_procedure === null,
+    terminalPath: expected.terminalPath === undefined ? true : output.terminal_path === expected.terminalPath,
   };
 
   return {

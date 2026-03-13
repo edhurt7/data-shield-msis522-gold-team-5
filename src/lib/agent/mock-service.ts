@@ -1,6 +1,12 @@
-import { createRunResponseSchema, getRunResponseSchema, sendChatCommandResponseSchema, type ChatMessage } from "@/lib/agent";
+import {
+  createRunResponseSchema,
+  getRunResponseSchema,
+  sendChatCommandResponseSchema,
+  type ChatMessage,
+} from "@/lib/agent/api";
 import { mockAgentRunState } from "@/lib/agent/mock-run";
-import { buildChatMessagesFromTimeline, buildBrokerSites, buildHistoryEntries, type BrokerSite, type HistoryEntry } from "@/lib/mock-data";
+import { buildChatMessagesFromTimeline, buildBrokerSites, buildHistoryEntries, createScanHistoryEntry, type BrokerSite, type HistoryEntry } from "@/lib/mock-data";
+import { getSessionHistory, prependSessionHistory } from "@/lib/session-history";
 
 interface DashboardSnapshot {
   runId: string;
@@ -49,10 +55,13 @@ function buildAssistantReply(message: string) {
 }
 
 function buildSnapshot(): DashboardSnapshot {
+  const brokerSites = buildBrokerSites(runState);
+  const fallbackHistory = buildHistoryEntries(runState);
+
   return {
     runId: runState.runId,
-    brokerSites: buildBrokerSites(runState),
-    history: buildHistoryEntries(runState),
+    brokerSites,
+    history: getSessionHistory(fallbackHistory),
     chatMessages,
   };
 }
@@ -99,6 +108,19 @@ export const mockAgentService = {
       ...runState,
       updatedAt: assistantMessage.timestamp,
     };
+
+    if (message.toLowerCase().includes("rescan")) {
+      prependSessionHistory(
+        createScanHistoryEntry({
+          id: `scan_${runState.runId}_${Date.now()}`,
+          runId: runState.runId,
+          date: assistantMessage.timestamp.slice(0, 10),
+          scan: "Rescan",
+          action: `Rescanned ${buildBrokerSites(runState).length} configured data broker sites during this session.`,
+          brokerSites: buildBrokerSites(runState),
+        }),
+      );
+    }
 
     return sendChatCommandResponseSchema.parse({
       message: {

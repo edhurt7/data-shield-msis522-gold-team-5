@@ -1,6 +1,16 @@
 import { z } from "zod";
 
 import {
+  createAgentApiClient,
+  type AgentApiClientOptions,
+} from "@/lib/agent/client";
+import {
+  retrieveProceduresResponseSchema,
+  type BackendProcedureRecord,
+  type RetrieveProceduresRequest,
+  type RetrieveProceduresResponse,
+} from "@/lib/agent/api";
+import {
   discoveryResultSchema,
   procedureSourceChunkSchema,
   reviewReasonSchema,
@@ -8,7 +18,6 @@ import {
   type ReviewReason,
 } from "@/lib/agent/contracts";
 import type { GraphContext } from "@/lib/agent/graph";
-import { builtInProcedureBackendResponses } from "@/lib/agent/procedure-backend-fixtures";
 import {
   builtInProcedureDocuments,
   procedureDocumentSchema,
@@ -32,20 +41,6 @@ export const procedureRetrievalResolutionSchema = z.object({
   review_reasons: z.array(reviewReasonSchema).default([]),
 });
 
-export const backendProcedureRecordSchema = z.object({
-  procedure_id: z.string().min(1),
-  site: z.string().min(1),
-  updated_at: z.string().datetime(),
-  channel_hint: z.enum(["email", "webform", "unknown"]),
-  source_chunks: z.array(procedureSourceChunkSchema).min(1),
-});
-
-export const backendProcedureRetrievalResponseSchema = z.object({
-  site: z.string().min(1),
-  retrieved_at: z.string().datetime(),
-  procedures: z.array(backendProcedureRecordSchema).default([]),
-});
-
 export const procedureRetrieverOptionsSchema = z.object({
   documents: z.array(procedureDocumentSchema).default([]),
   maxAgeDays: z.number().int().positive().default(60),
@@ -56,8 +51,13 @@ export type ProcedureResolutionStatus = z.infer<typeof procedureResolutionStatus
 export type ProcedureRetrievalRequest = z.infer<typeof procedureRetrievalRequestSchema>;
 export type ProcedureRetrievalResolution = z.infer<typeof procedureRetrievalResolutionSchema>;
 export type ProcedureRetrieverOptions = z.infer<typeof procedureRetrieverOptionsSchema>;
-export type BackendProcedureRecord = z.infer<typeof backendProcedureRecordSchema>;
-export type BackendProcedureRetrievalResponse = z.infer<typeof backendProcedureRetrievalResponseSchema>;
+export type BackendProcedureRetrievalResponse = RetrieveProceduresResponse;
+
+export interface DefaultProcedureRetrieverOptions extends AgentApiClientOptions {
+  client?: ProcedureRetrievalBackendClient;
+  maxAgeDays?: number;
+  now?: string;
+}
 
 export type ProcedureRetriever = (
   input: ProcedureRetrievalRequest,
@@ -77,6 +77,10 @@ export interface BackendProcedureRetrieverOptions {
   now?: string;
 }
 
+function normalizeProcedureChunks(chunks: z.input<typeof procedureSourceChunkSchema>[]) {
+  return chunks.map((chunk) => procedureSourceChunkSchema.parse(chunk));
+}
+
 function unique(values: string[]) {
   return Array.from(new Set(values.filter(Boolean)));
 }
@@ -90,7 +94,11 @@ function sortByUpdatedAtDescending(documents: ProcedureDocument[]) {
 }
 
 function flattenChunks(documents: ProcedureDocument[]) {
-  return documents.flatMap((document) => document.chunks);
+  return documents.flatMap((document) => document.chunks.map((chunk) => procedureSourceChunkSchema.parse({
+    ...chunk,
+    source_id: chunk.source_id ?? document.id,
+    source_updated_at: chunk.source_updated_at ?? document.updated_at,
+  })));
 }
 
 function sortBackendProceduresByUpdatedAtDescending(procedures: BackendProcedureRecord[]) {
@@ -98,7 +106,11 @@ function sortBackendProceduresByUpdatedAtDescending(procedures: BackendProcedure
 }
 
 function flattenBackendChunks(procedures: BackendProcedureRecord[]) {
-  return procedures.flatMap((procedure) => procedure.source_chunks);
+  return procedures.flatMap((procedure) => procedure.source_chunks.map((chunk) => procedureSourceChunkSchema.parse({
+    ...chunk,
+    source_id: chunk.source_id ?? procedure.procedure_id,
+    source_updated_at: chunk.source_updated_at ?? procedure.updated_at,
+  })));
 }
 
 function ageInDays(updatedAt: string, now: string) {
@@ -136,7 +148,7 @@ export function createBackendProcedureRetriever(options: BackendProcedureRetriev
     if (input.provided_chunks.length > 0) {
       return {
         status: "found",
-        chunks: input.provided_chunks,
+        chunks: normalizeProcedureChunks(input.provided_chunks),
         notes: "Using provided retrieval chunks.",
         review_reasons: [],
       };
@@ -145,16 +157,26 @@ export function createBackendProcedureRetriever(options: BackendProcedureRetriev
     if (input.registry_chunks.length > 0) {
       return {
         status: "found",
-        chunks: input.registry_chunks,
+        chunks: normalizeProcedureChunks(input.registry_chunks),
         notes: "Using registry fallback retrieval chunks.",
         review_reasons: [],
       };
     }
 
     const rawResponse = await options.client.retrieveProcedures(input, context);
-    const response = backendProcedureRetrievalResponseSchema.parse(rawResponse);
+    const response = retrieveProceduresResponseSchema.parse(rawResponse);
     const procedures = sortBackendProceduresByUpdatedAtDescending(
-      response.procedures.filter((procedure) => procedure.site.toLowerCase() === input.site.toLowerCase()),
+      response.procedures
+        .filter((procedure) => procedure.site.toLowerCase() === input.site.toLowerCase())
+        .map((procedure) => ({
+          ...procedure,
+          source_chunks: procedure.source_chunks.map((chunk) => procedureSourceChunkSchema.parse({
+            ...chunk,
+            source_id: chunk.source_id ?? procedure.procedure_id,
+            source_updated_at: chunk.source_updated_at ?? procedure.updated_at,
+            retrieved_at: chunk.retrieved_at ?? response.retrieved_at,
+          })),
+        })),
     );
 
     if (procedures.length === 0) {
@@ -201,7 +223,7 @@ export function createStaticProcedureRetrievalBackendClient(
   responses: BackendProcedureRetrievalResponse[],
 ): ProcedureRetrievalBackendClient {
   const responseBySite = new Map(
-    responses.map((response) => [response.site.toLowerCase(), backendProcedureRetrievalResponseSchema.parse(response)]),
+    responses.map((response) => [response.site.toLowerCase(), retrieveProceduresResponseSchema.parse(response)]),
   );
 
   return {
@@ -211,6 +233,30 @@ export function createStaticProcedureRetrievalBackendClient(
         retrieved_at: new Date().toISOString(),
         procedures: [],
       };
+    },
+  };
+}
+
+export function createAgentApiProcedureRetrievalBackendClient(
+  options: AgentApiClientOptions = {},
+): ProcedureRetrievalBackendClient {
+  const apiClient = createAgentApiClient(options);
+
+  return {
+    retrieveProcedures(input, _context) {
+      const request = {
+        seed_profile: input.seed_profile,
+        discovery_result: input.discovery_result,
+        site: input.site,
+      } satisfies RetrieveProceduresRequest;
+
+      return apiClient.retrieveProcedures({
+        ...request,
+        discovery_result: {
+          ...request.discovery_result,
+          notes: request.discovery_result.notes ?? null,
+        },
+      });
     },
   };
 }
@@ -225,7 +271,7 @@ export function createDocumentProcedureRetriever(options: Partial<ProcedureRetri
     if (input.provided_chunks.length > 0) {
       return {
         status: "found",
-        chunks: input.provided_chunks,
+        chunks: normalizeProcedureChunks(input.provided_chunks),
         notes: "Using provided retrieval chunks.",
         review_reasons: [],
       };
@@ -234,14 +280,24 @@ export function createDocumentProcedureRetriever(options: Partial<ProcedureRetri
     if (input.registry_chunks.length > 0) {
       return {
         status: "found",
-        chunks: input.registry_chunks,
+        chunks: normalizeProcedureChunks(input.registry_chunks),
         notes: "Using registry fallback retrieval chunks.",
         review_reasons: [],
       };
     }
 
     const documents = sortByUpdatedAtDescending(
-      resolvedOptions.documents.filter((document) => document.site.toLowerCase() === input.site.toLowerCase()),
+      resolvedOptions.documents
+        .filter((document) => document.site.toLowerCase() === input.site.toLowerCase())
+        .map((document) => ({
+          ...document,
+          chunks: document.chunks.map((chunk) => procedureSourceChunkSchema.parse({
+            ...chunk,
+            source_id: chunk.source_id ?? document.id,
+            source_updated_at: chunk.source_updated_at ?? document.updated_at,
+            retrieved_at: chunk.retrieved_at ?? (resolvedOptions.now ?? new Date().toISOString()),
+          })),
+        })),
     );
 
     if (documents.length === 0) {
@@ -284,8 +340,13 @@ export function createDocumentProcedureRetriever(options: Partial<ProcedureRetri
   };
 }
 
-export function createDefaultProcedureRetriever(): ProcedureRetriever {
+export function createDefaultProcedureRetriever(options: DefaultProcedureRetrieverOptions = {}): ProcedureRetriever {
   return createBackendProcedureRetriever({
-    client: createStaticProcedureRetrievalBackendClient(builtInProcedureBackendResponses),
+    client: options.client ?? createAgentApiProcedureRetrievalBackendClient({
+      baseUrl: options.baseUrl,
+      fetchFn: options.fetchFn,
+    }),
+    maxAgeDays: options.maxAgeDays,
+    now: options.now,
   });
 }

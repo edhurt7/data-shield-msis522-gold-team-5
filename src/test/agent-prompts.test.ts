@@ -20,14 +20,24 @@ describe("agent prompt definitions", () => {
         consent: true,
       },
       site: "FastPeopleSearch",
-      page_text: "Jane Doe, age 35, Seattle, WA",
-      page_url: "https://example.com/listing/jane-doe",
+      page_artifact: {
+        visible_text: "Jane Doe, age 35, Seattle, WA",
+        url: "https://example.com/listing/jane-doe",
+        screenshot_ref: "artifacts/jane-doe.png",
+        extracted_metadata: {
+          title: "Jane Doe in Seattle, WA",
+          page_category: "listing_detail",
+        },
+      },
     });
 
     expect(listingClassifierPrompt.system).toContain("strict JSON only");
     expect(listingClassifierPrompt.system).toContain("evidence_snippets");
     expect(prompt).toContain("Seed profile");
-    expect(prompt).toContain("Page text");
+    expect(prompt).toContain("Visible page text");
+    expect(prompt).toContain("Page artifact");
+    expect(prompt).toContain('"site": "FastPeopleSearch"');
+    expect(prompt).toContain('"scan_timestamp"');
   });
 
   it("grounds procedure selection in retrieved chunks", () => {
@@ -67,11 +77,21 @@ describe("agent prompt definitions", () => {
 
     expect(procedureSelectorPrompt.system).toContain("Do not invent steps");
     expect(prompt).toContain("Retrieved chunks");
+    expect(prompt).toContain('"procedure_type": "email"');
+    expect(prompt).toContain('"source_chunks"');
   });
 
   it("enforces PII minimization in draft generation and caution in post execution verification", () => {
     expect(draftGeneratorPrompt.system).toContain("Minimize PII");
     expect(postExecutionVerifierPrompt.system).toContain("If a CAPTCHA appears");
     expect(postExecutionVerifierPrompt.system).toContain("Do not overstate success");
+    expect(postExecutionVerifierPrompt.system).toContain("Allowed next_status values are exactly");
+  });
+
+  it("assigns explicit version identifiers to every prompt definition", () => {
+    expect(listingClassifierPrompt.version).toMatch(/^\d{4}-\d{2}-\d{2}\.\d+$/);
+    expect(procedureSelectorPrompt.version).toMatch(/^\d{4}-\d{2}-\d{2}\.\d+$/);
+    expect(draftGeneratorPrompt.version).toMatch(/^\d{4}-\d{2}-\d{2}\.\d+$/);
+    expect(postExecutionVerifierPrompt.version).toMatch(/^\d{4}-\d{2}-\d{2}\.\d+$/);
   });
 });
